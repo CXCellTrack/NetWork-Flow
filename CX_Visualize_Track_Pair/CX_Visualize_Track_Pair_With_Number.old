@@ -1,0 +1,139 @@
+%######################################
+%
+% 2015.5.30 CX on desk
+% 作用：这个函数用于将跟踪完成的细胞上色，便于观察
+% 数据存储：上完色的图片保存在‘可视化跟踪标记’
+% 依赖关系：调用 CX_RePlot_Ellipse 绘制更新后的椭圆
+%          调用 CX_plot 和 CX_plot_event 进行跟踪标记
+%###################################### 
+
+%% 绘制可视化跟踪
+clear;close all;
+load('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_track\Pair\Pre_data.mat');
+load('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_track\Pair\Track_Data.mat');
+frame = numel(Ellipse);
+
+color = colormap(hsv);close('1');
+color_numbel = numel(color)/3;
+color = color(randperm(color_numbel),:);
+fig_addr = 'E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_track\新拟合图\';
+fig_dir = dir([ fig_addr, '*.fig' ]);
+
+% 即当新拟合图文件夹内的图片数量比目前的frame小时，需要重绘拟合图片
+if numel(fig_dir)<frame
+    CX_RePlot_Ellipse( Ellipse );
+    fig_dir = dir([ fig_addr, '*.fig' ]);
+end
+
+
+for t=1:frame
+    fig_name = [ fig_addr, fig_dir(t).name ];
+    openfig(fig_name, 'new', 'invisible'); %'invisible'
+    hold;
+        %##### 第一帧需要分配随机彩色 #####
+        if t==1
+            for j=1:n(t)
+                %#####这一段代码反复用到，直接打包#####
+                sum_Fmj = 0;
+                % sum_fmj 为所有包含 j 的融合 pair 的 fmj 之和
+                for ind=1:numel(conflict_pair_last_xy{t}{j})/2
+                    sum_Fmj = sum_Fmj + Fmj{t+1}( conflict_pair_last_xy{t}{j}(ind,1), conflict_pair_last_xy{t}{j}(ind,2) );
+                end
+                %####################################
+                if sum(Fij{t}(j,:)) + Fit{t}(j) + sum(Fid{t}(j,:)) + sum(Fiv{t}(j,:)) + sum_Fmj ~=0   %%有出口的细胞就分配颜色
+                    Ellipse{t}{j}.color_index = j;
+                end
+            end
+        end
+        %###############################
+    for j=1:n(t)
+        %#################### 上色 #######################
+        if isfield( Ellipse{t}{j}, 'color_index' )
+            if numel( Ellipse{t}{j}.color_index )==2
+                CX_plot( Ellipse{t}{j}, [1 1 1] );
+                text( Ellipse{t}{j}.x0, Ellipse{t}{j}.y0, num2str(j), 'color', [1 1 1], 'fontsize', 12 );
+            else%if numel( Ellipse{t}{j}.color_index )==1
+                CX_plot( Ellipse{t}{j}, color(Ellipse{t}{j}.color_index,:) );
+                text( Ellipse{t}{j}.x0, Ellipse{t}{j}.y0, num2str(j), 'color', [1 1 1], 'fontsize', 12 );
+            end
+        end
+        
+        %################# 根据不同的事件把颜色传递给后代 ##################
+        
+        %########## 入口事件不出现在第一帧 ##########
+        if t~=1
+            %########## 出现 ##########
+            if Fsj{t}(j)==1   
+                indc = randi(color_numbel);
+                CX_plot_event( Ellipse{t}{j}, 's');   %%新出现细胞标记
+                Ellipse{t}{j}.color_index = indc; 
+                CX_plot( Ellipse{t}{j}, color(Ellipse{t}{j}.color_index,:) ); % 出现比较特殊，新出现的需要在这里上色
+                text( Ellipse{t}{j}.x0, Ellipse{t}{j}.y0, num2str(j), 'color', [1 1 1], 'fontsize', 12 );
+            end
+            %########## 融合 ##########
+            if sum(Fmj{t}(j,:))==1
+                mm = find(Fmj{t}(j,:)==1);
+                source = candidate_k_last{t}{j,mm};
+                Ellipse{t}{j}.color_index = [ Ellipse{t-1}{source(1)}.color_index, Ellipse{t-1}{source(2)}.color_index ];
+                CX_plot_event( Ellipse{t}{j}, 'm');   %%融合得来的细胞标记
+                CX_plot( Ellipse{t}{j}, [1 1 1] ); %% 融合得到的需要新上色
+                text( Ellipse{t}{j}.x0, Ellipse{t}{j}.y0, num2str(j), 'color', [0 0 1], 'fontsize', 12 );
+            end
+        end
+        
+        %########## 出口事件不出现在最后一帧 ##########
+        if t~=frame
+            %########### 分裂 ##########
+            if sum(Fid{t}(j,:))==1    
+                mm=find(Fid{t}(j,:)==1);
+                % 找到2个子细胞，让它们继承颜色
+                son = candidate_k_next{t}{j,mm};
+                
+                Ellipse{t+1}{son(1)}.color_index = Ellipse{t}{j}.color_index;
+                Ellipse{t+1}{son(2)}.color_index = Ellipse{t}{j}.color_index;
+
+                CX_plot_event( Ellipse{t}{j}, 'd' );
+            end
+
+            %########### 分离 ##########
+            if sum(Fiv{t}(j,:))==1     
+                mm=find(Fiv{t}(j,:)==1);
+                % 找到2个分离细胞，让它们继承颜色
+                split = candidate_k_next{t}{j,mm};
+                if numel(Ellipse{t}{j}.color_index)==2 % 如果找到2种颜色就各自领取，否则就继承
+                    Ellipse{t+1}{split(1)}.color_index = Ellipse{t}{j}.color_index(1);
+                    Ellipse{t+1}{split(2)}.color_index = Ellipse{t}{j}.color_index(2);
+                else
+                     Ellipse{t+1}{split(1)}.color_index = Ellipse{t}{j}.color_index;
+                     Ellipse{t+1}{split(2)}.color_index = Ellipse{t}{j}.color_index;
+                end
+                CX_plot_event( Ellipse{t}{j}, 'v' );  
+            end
+            %########### 消失 ##########
+            if Fit{t}(j)==1     
+                CX_plot_event( Ellipse{t}{j}, 't' );
+            end
+
+            %########### 迁移 ##########
+            if sum(Fij{t}(j,:))==1
+                mm = find(Fij{t}(j,:)==1);
+                Ellipse{t+1}{mm}.color_index = Ellipse{t}{j}.color_index;
+            end
+
+        end
+        
+    end
+    hold;
+    savename= strcat('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_track\Pair\可视化跟踪标记\',fig_dir(t).name);
+    saveas(1,savename);
+    close('1');
+end
+
+%%
+screen_size = get(0,'ScreenSize');
+colored_fig_dir = dir('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_track\Pair\可视化跟踪标记\*.fig');  
+for t=1:7%frame
+    fig_name = strcat('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_track\Pair\可视化跟踪标记\', colored_fig_dir(t).name);
+    openfig(fig_name,'new','visible');
+    set(gcf,'Position',screen_size);
+end

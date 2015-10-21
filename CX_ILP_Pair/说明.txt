@@ -1,0 +1,8 @@
+此文件夹内的 CX_ILP_Pair 用于 NetWork Flow 中的目标函数表达式：
+
+即 log(p/(1-p))*fij
+
+==============================
+
+使用 structured learning 以后，不需要用这个版本了，CX_ILP_Pair 不再使用
+但 CX_ILP_Pair_Pre 和 CX_ellipse_optimal 仍要继续使用

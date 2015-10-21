@@ -1,0 +1,122 @@
+
+
+clear;close all
+% 载入灰度标签和椭圆的对应关系
+load('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_track\GT\Label_to_Ellipse.mat');
+% 载入当前w下的最佳分配流程变量，存为 F_w，防止和gt变量名冲突
+load('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_track\结构化学习\Track_Data_Using_Best_w_New.mat');
+Fij_w = Fij;
+Fit_w = Fit;
+Fid_w = Fid;
+Fiv_w = Fiv;
+Fmj_w = Fmj;
+Fsj_w = Fsj;
+% 载入标准答案
+load('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_track\GT\GT_Flow_Variables_New.mat');
+load('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_track\Pair\Pre_data_New.mat');
+
+% 根据流程变量求出开始帧和结束帧
+s_frame = sum(cellfun(@isempty, Fsj_w));
+e_frame = numel(Fij_w) + 1;
+frame = e_frame - s_frame + 1;
+
+%% 统计预测结果和GT中 merge与split 出现的位置、数目
+
+% ================ merge ================ %
+gt_merge_num = zeros(e_frame,1);
+gt_merge_txy = [];
+my_merge_num = zeros(e_frame,1);
+my_merge_txy = [];
+
+for t=s_frame+1:e_frame
+    % ------ 计算标准答案的merge发生位置 ------ %
+    gt_merge_num(t) = sum(sum(Fmj{t}));
+    % 如果该帧发生了merge，则找出其位置
+    if gt_merge_num(t)~=0
+        [tmpx tmpy] = find(Fmj{t}==1);       
+        % 将t、x、y、source1、source2 保存在 gt_merge_txy 中
+        for ind=1:numel(tmpx)
+            gt_merge_txy = [ gt_merge_txy; t tmpx(ind) tmpy(ind) candidate_k_last{t}{tmpx(ind),tmpy(ind)} ];
+        end
+    end
+    
+    % ------ 计算预测出的merge发生位置 ------ %       
+    my_merge_num(t) = sum(sum(Fmj_w{t}));
+    % 如果该帧发生了merge，则找出其位置
+    if my_merge_num(t)~=0
+        [tmpx tmpy] = find(Fmj_w{t}==1);    
+    	% 将t、x、y、source1、source2 保存在 my_merge_txy 中（x就是merge得到的椭圆）
+        for ind=1:numel(tmpx)
+            my_merge_txy = [ my_merge_txy; t tmpx(ind) tmpy(ind) candidate_k_last{t}{tmpx(ind),tmpy(ind)} ];
+        end
+    end
+    % -------------------------------------- %  
+end
+
+% ================ split ================ %
+gt_split_num = zeros(frame,1);
+my_split_num = zeros(frame,1);
+gt_split_txy = [];
+my_split_txy = [];
+
+for t=s_frame:e_frame-1
+    % ------ 计算标准答案的split发生位置 ------ %
+    gt_split_num(t) = sum(sum(Fiv{t}));
+    % 如果该帧发生了split，则找出其位置
+    if gt_split_num(t)~=0
+        [tmpx tmpy] = find(Fiv{t}==1);       
+        % 将t、x、y、source1、source2 保存在 gt_split_txy 中
+        for ind=1:numel(tmpx)
+            gt_split_txy = [ gt_split_txy; t tmpx(ind) tmpy(ind) candidate_k_next{t}{tmpx(ind),tmpy(ind)} ];
+        end
+    end
+    
+    % ------ 计算预测出的split发生位置 ------ %       
+    my_split_num(t) = sum(sum(Fiv_w{t}));
+    % 如果该帧发生了split，则找出其位置
+    if my_split_num(t)~=0
+        [tmpx tmpy] = find(Fiv_w{t}==1);    
+    	% 将t、x、y、son1、son2 保存在 my_split_txy 中（x就是split之前的椭圆）
+        for ind=1:numel(tmpx)
+            my_split_txy = [ my_split_txy; t tmpx(ind) tmpy(ind) candidate_k_next{t}{tmpx(ind),tmpy(ind)} ];
+        end
+    end
+    % -------------------------------------- %
+    gt_split_num(t) = sum(sum(Fiv{t}));
+    my_split_num(t) = sum(sum(Fiv_w{t}));
+end
+
+%% 
+% 如果gt和my的数目不一样，肯定是出错了；数目一样但发生时间不一样，不一定出错
+% 回溯寻找split的起源，看是否merge而来
+
+% 计算MOTA指标中的漏检（label2e中为0的项即为漏检）
+load('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_track\GT\Label_to_Ellipse.mat');
+num_miss_detection = zeros(frame,1);
+for t=s_frame:e_frame
+    num_miss_detection(t) = numel( find(label2e{t}==0) );
+end
+sum_m_d = sum(num_miss_detection); % 漏检的数目是初始分割决定的，与学习过程无关
+
+
+
+% if ~isempty(my_split_txy)
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,310 @@
+clear;close all;
+num_appear = 34;
+num_death = 79;
+num_divide = 94;
+num_move = 8374;
+P_appear = 0.1;
+P_death = 0.1;
+P_divide = 0.3;
+P_merge = 0.3;
+P_split = 0.3;
+P_move = 0.9;
+% %% 读入图片——产生假说
+% cut_1 = [313,86]; cut_2 = [569,239];
+% t0 = imcrop(t00,[cut_1,cut_2(1)-cut_1(1),cut_2(2)-cut_1(2)]);
+% t1 = imcrop(t01,[cut_1,cut_2(1)-cut_1(1),cut_2(2)-cut_1(2)]);
+% t2 = imcrop(t02,[cut_1,cut_2(1)-cut_1(1),cut_2(2)-cut_1(2)]);
+% t3 = imcrop(t03,[cut_1,cut_2(1)-cut_1(1),cut_2(2)-cut_1(2)]);
+% t4 = imcrop(t04,[cut_1,cut_2(1)-cut_1(1),cut_2(2)-cut_1(2)]);
+
+%% 计算基本信息
+tic;
+disp('   构建目标函数和约束条件……');
+
+load('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_seg\raw_ellipse1.7.mat');
+Ellipse = ellipse(1:20);
+Ellipse = CX_ellipse_optimal( Ellipse );
+frame = numel(Ellipse);
+
+n=ones(1,frame);
+for t=1:frame
+    Ellipse{t} = reshape(Ellipse{t}',size(Ellipse{t},1)*size(Ellipse{t},2),1); %拉直
+    while(n(t)<=numel(Ellipse{t}))
+        % 滤掉空cell和status为0的、相似性删除为1的
+        while isempty(Ellipse{t}{n(t)}) || Ellipse{t}{n(t)}.status==0 || Ellipse{t}{n(t)}.similar_delete==1 
+            Ellipse{t}(n(t))=[];
+            if n(t)> numel(Ellipse{t})
+                n(t)=n(t)-1;
+                break;
+            end
+        end
+        n(t)=n(t)+1;
+    end
+    n(t)=n(t)-1;
+end
+
+for t=1:frame-1
+    %           
+    % 对应      it    id   iv      ij         sj      mj
+    num_var(t)=n(t)+ n(t)+n(t)+ n(t)*n(t+1) + n(t+1)+n(t+1) ;    %%2帧之间的变量数
+end
+num_var_sum = sum(num_var);   %%总变量数目
+
+%% 构建变量矩阵
+fij = cell(1,frame-1);
+fid = cell(1,frame-1);
+fit = cell(1,frame-1);
+fiv = cell(1,frame-1);
+fsj = cell(1,frame);
+fmj = cell(1,frame);
+for t=1:frame-1
+    %  t中第m个前景中的第width个细胞   
+    fij{t} = binvar(n(t), n(t+1), 'full'); %%fij变量矩阵
+    fid{t} = binvar(n(t), 1,'full');   %%母细胞
+    fit{t} = binvar(n(t), 1,'full');   %%消失
+    fiv{t} = binvar(n(t), 1,'full');   %%分裂
+end
+for t1=2:frame
+    fsj{t1} = binvar(n(t1), 1,'full');   %%出现
+    fmj{t1} = binvar(n(t1), 1,'full');   %%融合
+end
+
+%% 求解Pij迁移概率矩阵
+Pij = cell(1,frame-1);
+dist = cell(1,frame-1);
+for t=1:frame-1
+    Pij{t} = zeros(n(t),n(t+1));
+    dist{t} = zeros(n(t),n(t+1));
+    for j=1:n(t)
+        for k=1:n(t+1)
+            % 椭圆距离必须在一定范围内
+            udist = sqrt( (Ellipse{t}{j}.x0 - Ellipse{t+1}{k}.x0)^2 + (Ellipse{t}{j}.y0 - Ellipse{t+1}{k}.y0)^2 );
+            if udist<=5*(Ellipse{t}{j}.a)
+                % 距离尺度，判断2个椭圆中心相距的远近,在取倒数,开根号弱化距离大小影响
+                dist{t}(j,k) = 1/udist;
+            else
+                dist{t}(j,k) = 0;    %距离太远则将Pij设为1个小常数
+            end
+        end
+        tmpmax = max(dist{t}(j,:));
+        for k=1:n(t+1)
+%             fij{i}(k,m) = P_move*( tmpmin / dist{i}(k,m) );
+            if tmpmax==0
+                Pij{t}(j,:)=0;
+            else
+                if tmpmax<1/(2*Ellipse{t}{j}.a)  % 即 最短距离大于2a
+                    Pij{t}(j,k) = P_move * Ellipse{t}{j}.a*dist{t}(j,k); %距离大快速下降
+                else    
+                    Pij{t}(j,k) = P_move * ( sqrt(dist{t}(j,k)/tmpmax) );    %%距离小缓慢下降
+                end
+            end
+        end
+    end
+end
+
+%% 求解Pid分裂概率矩阵  （先留出位置）
+Pid = cell(1,frame-1);
+Piv = cell(1,frame-1);
+for t=1:frame-1
+    for j=1:n(t)
+        Pid{t}(j,1) = P_divide;
+        Piv{t}(j,1) = P_split;
+    end
+end
+%% 目标函数
+tmp_ij = 0;
+tmp_it = 0;
+tmp_id = 0;
+tmp_iv = 0;
+for t=1:frame-1
+    tmp_ij = sum(sum( log(Pij{t}./(1-Pij{t})).*fij{t} )) + tmp_ij;
+    tmp_it = log(P_death/(1-P_death))*sum(sum(fit{t})) + tmp_it;
+    tmp_id = sum( log(Pid{t}./(1-Pid{t})).*fid{t} ) + tmp_id;   
+    tmp_iv = sum( log(Piv{t}./(1-Piv{t})).*fiv{t} ) + tmp_iv;
+end
+
+tmp_sj = 0;
+tmp_mj = 0;
+for j=2:frame   
+    tmp_sj = log(P_appear/(1-P_appear))*sum(sum(fsj{j})) + tmp_sj;
+    tmp_mj = log(P_merge/(1-P_merge))*sum(sum(fmj{j})) + tmp_mj;
+end
+    
+object_function = tmp_ij + tmp_it + tmp_id + tmp_iv + tmp_sj + tmp_mj;
+clear tmp_ij tmp_it tmp_id tmp_iv tmp_sj tmp_mj;
+%######################################## 建立约束条件 #############################################
+%% 约束条件1： 进出守恒
+F1 = [];
+F2 = [];
+F3 = [];
+F4 = [];
+F5 = [];
+F6 = [];
+F7 = [];
+F11 = [];
+for t=2:frame-1  %%中间帧
+    for j=1:n(t)   %%对于任意的j
+        %分别对应      fij(i遍历)                                               fjk(k遍历)   
+        F1 = [ F1, sum(fij{t-1}(:,j)) + fsj{t}(j) + fid{t}(j) + fiv{t}(j) == sum(fij{t}(j,:)) + fit{t}(j) + fmj{t}(j) ]; %####论文规则1
+%         F2 = [ F2, sum(fij{t-1}(:,j)) + fsj{t}(j) >= fid{t}(j) + fiv{t}(j) <= 1 ];%####论文规则2  存在才能分裂/分离  分裂/分离互斥
+        F3 = [ F3, fmj{t}(j) + fid{t}(j) <= 1]; % 融合与分裂互斥       
+        F11 = [ F11, fmj{t}(j)==fiv{t}(j) ]; % 融合之后必须进行分离(只允许2进2出，强约束)
+    end
+end
+%#####
+t = frame;
+for j=1:n(t)
+    F11 = [ F11, fmj{t}(j)==0 ];   %最后一帧不允许融合
+end
+%#####
+for t=1:frame-1
+    for j=1:n(t)
+        % 双出口必分裂/分离  单出口必不分裂/分离  
+        F4 = [ F4, 2*fid{t}(j) + 2*fiv{t}(j) <= sum(fij{t}(j,:)) + fit{t}(j) ];
+        F4 = [ F4, sum(fij{t}(j,:)) + fit{t}(j) <= 2*fid{t}(j) + 2*fiv{t}(j) + 1 ];
+        F2 = [ F2, fid{t}(j) + fiv{t}(j) <= 1 ];  %%分裂/分离互斥
+        
+%         % 不允许分裂和合并同时发生，n*n的一个约束  2015.5.27 原理是利用迁移矩阵中的十字交叉
+%         for k=1:n(t+1)
+%             F11 = [ F11, sum(fij{t}(j,:)) + sum(fij{t}(:,k)) + 2*fij{t}(j,k)<=4 ];
+%         end
+%         % 引入的约束太多了，无法计算
+    end
+end
+%
+for t=2:frame
+    for j=1:n(t)
+        % 双入口必融合  单入口必不融合 
+        F5 = [ F5, 2*fmj{t}(j) <= sum(fij{t-1}(:,j)) + fsj{t}(j) ];
+        F5 = [ F5, sum(fij{t-1}(:,j)) + fsj{t}(j) <= 2*fmj{t}(j) + 1 ];
+    end
+end
+%################
+%% 约束条件2： 互斥变量
+for t=1:frame-1
+    for j=1:n(t)
+        % 出口变量和消失互斥
+        F6 = [ F6, sum(fij{t}(j,:))/2 + fit{t}(j) <= 1 ];
+    end
+end
+%
+for t=2:frame
+    for j=1:n(t)
+        % 入口变量和出现互斥 
+        F7 = [ F7, sum(fij{t-1}(:,j))/2 + fsj{t}(j) <= 1 ];
+    end
+end
+
+%% 约束条件3： 排除矛盾假说
+F8 = [];
+F9 = [];
+F10 = [];
+conflict = {};
+for t=1:frame
+    conflict{t}={};
+    j=1;
+    while j<=n(t)    %j遍历
+        if Ellipse{t}{j}.num_hypoth>1
+            num_danduan = numel(Ellipse{t}{j}.flag_combine);
+            % 这一部分求出j到j+jplus都属于同一前景
+            jplus = 1;
+            while Ellipse{t}{j+jplus}.ind_region == Ellipse{t}{j}.ind_region
+                jplus = jplus + 1;
+            end
+            jplus = jplus - 1;
+            %##### j到j+jplus为一个前景 ######
+            %
+            % 不允许细胞分裂到同一个前景中
+            if t>1
+                for no_divide_ind = 1:n(t-1)
+                    %  
+                    F8 = [ F8, fid{t-1}(no_divide_ind) + sum(fij{t-1}(no_divide_ind,j:j+jplus)) <= 2 ];
+                end
+            end
+            %################################
+            % conflict表示所有可能的矛盾集合
+            for uu=j:j+num_danduan-1
+                %########这部分找出了一个矛盾假说集合
+                conflict{t}{j, uu-j+1} = uu;
+                for vv=uu+1:j+jplus
+                    if ~isequal( Ellipse{t}{uu}.flag_combine & Ellipse{t}{vv}.flag_combine, zeros(1,num_danduan))   %%相与不为0则将其加入矛盾集
+                        conflict{t}{j, uu-j+1} = [conflict{t}{j, uu-j+1}, vv];
+                    end
+                end
+                %##########################此处计算出入口约束###############
+                conflict_tmp_set = conflict{t}{j, uu-j+1}; %矛盾集合的临时变量
+                if t==1 %第一帧考虑出口
+                    constrain_sum1 = 0;
+                    constrain_sum2 = 0;
+                    constrain_sum3 = 0;
+                    for jj=1:numel(conflict_tmp_set)
+                        constrain_sum1 = constrain_sum1 + sum(fij{t}(conflict_tmp_set(jj),:)); %%迁移出口和
+                        constrain_sum2 = constrain_sum2 + sum(fit{t}(conflict_tmp_set(jj)));   %%消失出口和
+                        constrain_sum3 = constrain_sum3 + sum(fid{t}(conflict_tmp_set(jj))) + sum(fiv{t}(conflict_tmp_set(jj)));%%分离/分裂出口和
+                    end
+                    F9 = [ constrain_sum1 + constrain_sum2 - constrain_sum3 <= 1 ];   %%出口唯一
+                    clear constrain_sum1 constrain_sum2 constrain_sum3;
+                else %2—n帧考虑入口
+                    constrain_sum4 = 0;
+                    constrain_sum5 = 0;
+                    %###一个矛盾集内入口至多为1个
+                    for jj=1:numel(conflict_tmp_set)
+                        constrain_sum4 = constrain_sum4 + sum(fij{t-1}(:,conflict_tmp_set(jj))) + fsj{t}(conflict_tmp_set(jj));
+                        constrain_sum5 = constrain_sum5 + fmj{t}(conflict_tmp_set(jj));
+                    end    
+                    F10 = [ F10, constrain_sum4 - constrain_sum5 <= 1 ]; %%2—n帧的入口和唯一
+                    %###
+                end
+                %##########################################################
+            end
+            j = j+jplus+1;
+        else %## 指前景中只含有一个椭圆
+            j = j+1;
+        end
+    end  %## end while
+end
+
+toc;
+disp('   开始求解ILP……');
+
+%% 最终求解
+options = sdpsettings('verbose',0,'solver','cplex');
+F=[ F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11];
+clear F1 F2 F3 F4 F5 F6 F7 F8 F9 F10 F11;
+sol = solvesdp(F, -object_function, options)
+
+Fij = cell(1,frame-1);
+Fid = cell(1,frame-1);
+Fiv = cell(1,frame-1);
+Fit = cell(1,frame-1);
+Fsj = cell(1,frame);
+Fmj = cell(1,frame);
+if sol.problem == 0
+    for t=1:frame-1
+        Fij{t} = value(fij{t});
+        Fid{t} = value(fid{t});
+        Fiv{t} = value(fiv{t});
+        Fit{t} = value(fit{t});
+    end
+    for j=2:frame
+        Fsj{j} = value(fsj{j});
+        Fmj{j} = value(fmj{j});
+    end
+
+    COST = value(object_function)
+else
+    sol.info
+    yalmiperror(sol.problem)
+end
+
+save('C:\Users\Administrator\Desktop\tmp_track\original\Track_Data.mat','Fij','Fid','Fiv','Fit','Fsj','Fmj','Pij');
+save('C:\Users\Administrator\Desktop\tmp_track\original\Ellipse.mat','Ellipse');
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,130 @@
+%% 尝试拉直变量矩阵，太过于复杂而不采用 2015.5.8
+% clear;clc;close all;
+% P_appear = 0.0040;
+% P_death = 0.0092;
+% P_divide = 0.0110;
+% P_move = 0.9759;
+% t00=imread('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_seg\t00.png');
+% t01=imread('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_seg\t01.png');
+% t02=imread('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_seg\t02.png');
+% t03=imread('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_seg\t03.png');
+% 
+% t0 = t00(400:500,300:600);%figure;subplot(221);imshow(t0)
+% t1 = t01(400:500,300:600);%subplot(222);imshow(t1)
+% t2 = t02(400:500,300:600);%subplot(223);imshow(t2)
+% t3 = t03(400:500,300:600);%subplot(224);imshow(t3)
+% pic=0;
+% [ ellipse{1} ]= CX_fit( pic ,0, t0);close('1');
+% [ ellipse{2} ]= CX_fit( pic ,0, t1);close('1');
+% [ ellipse{3} ]= CX_fit( pic ,0, t2);close('1');
+% [ ellipse{4} ]= CX_fit( pic ,0, t3);close('1');
+% 
+% frame = numel(ellipse);
+% n=[];
+% for i=1:frame
+%     n(i)=numel(ellipse{i});    %%每一帧中的椭圆个数
+% end
+% for i=1:frame-1
+%     %           前2个消失           后3个出现
+%     % 对应      it    id       ij       dj       sj  
+%     num_var(i)=n(i)+ n(i)+ n(i)*n(i+1)+ n(i+1)+ n(i+1) ;    %%2帧之间的变量数
+% end
+% sum_var = sum(num_var);   %%总变量数目
+% 
+% % % 变量位置分配
+% % n0  n0  n0*n1  n1  n1
+% % it  id   ij    dj  sj   
+% %% 求解Fij 
+% for i=1:frame-1
+%     for k=1:n(i)
+%         tmpsum = 0;
+%         tmpmin = 0;
+%         for m=1:n(i+1)
+%             % 距离尺度，判断2个椭圆中心相距的远近,在倒数
+%             dist{i}(k,m) = 1 / sqrt( (ellipse{i}{k}.x0 - ellipse{i+1}{m}.x0)^2 + (ellipse{i}{k}.y0 - ellipse{i+1}{m}.y0)^2 );
+%         end
+%         tmpsum = sum(dist{i}(k,:));
+%         tmpmin = min(dist{i}(k,:));
+%         for m=1:n(i+1)
+% %             fij{i}(k,m) = P_move*( tmpmin / dist{i}(k,m) );
+%             Pij{i}(k,m) = P_move*( (dist{i}(k,m)/tmpsum) );    %%距离求和按比例分配概率
+%         end
+%     end
+% end
+% %% 
+% for i=1:frame-1
+%     Pij_col{i} = reshape(Pij{i},1,n(i)*n(i+1));  %%按列拉直,对应P11，P21，P31
+%     Pij_row{i} = reshape(Pij{i}',1,n(i)*n(i+1));  %%按行拉直,对应P11，P12，P13
+% end
+% 
+% obj={};
+% for i=1:frame-1
+%     %分别对应       n0个it    n0个id    n0*n1个ij     n1个dj    n1个sj
+%     obj{i} = [P_death*ones(1,n(i)), P_divide*ones(1,n(i)), Pij_row{i}, zeros(1,n(i+1)),  P_appear*ones(1,n(i+1))];
+% end
+% obj_f = sparse(cell2mat(obj));    %%变量的系数矩阵
+% 
+% %% 第一条：in out 约束
+% constrain={};
+% A={};
+% %%
+% 
+% k=1;    %%第1-2帧的约束和其他不一样
+% for i=1:n(k)
+%     constrain{k, i} = zeros(1,num_var(k));
+%     %分别对应     it    id           ij (j遍历)p12,p13,p14
+%     flag{k,i} = [i, n(k)+i, 2*n(k)+(i-1)*n(k+1)+1:2*n(k)+i*n(k+1)];
+%     constrain{k, i}(flag{k,i})=1;
+%     constrain{k, i} = [constrain{k, i},zeros(1,sum_var-numel(constrain{k, i}))];  %%吧末位的0补上
+% end
+% A{k} = cell2mat(constrain(k,:)');   %%A矩阵第一帧约束的
+% %%
+% 
+% % k=frame-1;  %%倒数第二帧—最后帧的约束和其他不一样
+% % for j=1:n(k)
+% %     constrain{k, j} = zeros(1,num_var(k));
+% %     %分别对应                  jk (j遍历)p11,p21,p31        dk    sk
+% %     flag{k,j} = [2*n(k)+j: n(k+1) :2*n(k)+(n(k)-1)*n(k+1)+j, 2*n(k)+n(k)*n(k+1)+j, 2*n(k)+n(k)*n(k+1)+ n(k+1)+j];
+% %     constrain{k, j}(flag{k,j})=1;
+% % end
+% % A{k} = cell2mat(constrain(k,:)');
+% %%
+% num_var_in=[];  %%中间帧的变量长度
+% for k=2:frame-1  %%中间帧的约束  切断点不一样
+%     %分别对应    jk (j遍历)p11,p21,p31 dk sk | kt kd  km (m遍历) p12,p13,p14
+%     for j=1:n(k)
+%         tmpflag = [];
+%         num_var_in(k) = n(k-1)*n(k)+ n(k-1)+ n(k-1)+ n(k-1)+ n(k-1)+ n(k)*n(k+1);
+%         constrain{k, j} = zeros(1,num_var_in(k));
+%         add_jkm = n(k-1)*n(k)+ n(k)*2;
+%         flag{k,j} = [ j: n(k) :(n(k-1)-1)*n(k)+j, n(k-1)*n(k)+j, n(k-1)*n(k)+ n(k)+j ];
+%         tmpflag = [ add_jkm+j, add_jkm+n(k)+j, add_jkm+2*n(k)+(j-1)*n(k+1)+1:add_jkm+2*n(k)+j*n(k+1)];
+%         constrain{k, j}(flag{k,j})=1;
+%         constrain{k, j}(tmpflag)= -1;
+%         constrain{k, j} = [ zeros(1,sum(num_var(1:k-2))+ 2*n(k-1)), constrain{k, j}];   %%前面补0 
+%         constrain{k, j} = [ constrain{k, j}, zeros(1, sum_var-numel(constrain{k, j}))];   %%后面补0  补到满位
+%     end
+%     A{k} = cell2mat(constrain(k,:)');
+% end
+% 
+% % A{1}=[A{1}
+% % for k=2:frame-1
+% % 	A{k}=
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 
+% 

@@ -1,0 +1,47 @@
+
+%
+% 将viterbi算法在数据集上得到的最终结果变成binary二值图像
+%
+clear;close all;
+
+if 0
+    dataset = 'training';
+else
+    dataset = 'competition';
+end
+
+res_dir = [ 'E:\datasets\first editon\',dataset,' datasets\N2DL-HeLa\01_RES\' ];
+seg = dir([res_dir, '*.tif']);
+output_folder = ['E:\datasets\first editon\',dataset,' datasets\N2DL-HeLa\01_KTH_SEG\'];
+if ~exist(output_folder, 'file')
+    mkdir(output_folder);
+end
+
+tic
+for i=1:numel(seg)
+    im = imread([res_dir, seg(i).name]); % 需要将灰度图转化为而二值化图
+    im = logical(im);
+    imwrite(im, [output_folder, strrep(seg(i).name,'tif','png')]); % 保存为png格式
+end
+toc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

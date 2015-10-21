@@ -1,0 +1,17 @@
+完整使用流程如下：
+
+1. JAVA 代码负责生成初始分割 undersegementation
+
+2. CX_Network.m 从初始分割中计算出椭圆假说
+
+3. CX_ILP_Pair.m 从椭圆假说中求解ILP得到全局最优分配方案
+
+4. CX_Visualize_Track_Pair.m 将分配结果用色彩标记展示出来
+
+
+注意 !
+
+CX_calculate_overlap_C.c
+CXSL_feature_C.c
+
+这2个C mex函数接口目前有点问题，暂不使用。前者无法正确计算overlap，后者存在循环次数限制。

@@ -1,0 +1,100 @@
+ %% 绘制可视化跟踪
+clear;close all;
+load('C:\Users\Administrator\Desktop\tmp_track\original\Track_Data.mat');
+load('C:\Users\Administrator\Desktop\tmp_track\original\Ellipse.mat');
+frame = numel(Ellipse);
+for t=1:frame
+    n(t) = numel(Ellipse{t});
+end
+color = colormap(hsv);close('1');
+color_numbel = numel(color)/3;
+color = color(randperm(color_numbel),:);
+fig_dir = dir('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_seg\拟合图1.7\*.fig');
+
+for t=1:frame
+    fig_name = strcat('E:\datasets\first editon\training datasets\N2DL-HeLa\01_2-16_seg\拟合图1.7\', fig_dir(t).name);
+    openfig(fig_name, 'new', 'invisible'); %'invisible'
+    hold;
+    %##### 第一帧分配随机彩色
+    if t==1  
+        for j=1:n(t)
+            if sum(Fij{t}(j,:)) + Fit{t}(j)~=0        %%有出口的细胞就上色
+                CX_plot( Ellipse{t}{j}, color(j,:) );text(Ellipse{t}{j}.x0, Ellipse{t}{j}.y0, num2str(j),'color',[1 1 1], 'FontSize',12);
+                Ellipse{t}{j}.color_index = j;
+
+                if Fid{t}(j)==1     %%母细胞加标记
+                    CX_plot_event( Ellipse{t}{j}, 'd' );
+                end
+%                 if Fiv{t}(j)==1     %%下一帧分离标记
+%                     CX_plot_event( Ellipse{t}{j}, 'v' );  
+%                 end
+                if Fit{t}(j)==1      %%消失细胞加标记
+                    CX_plot_event( Ellipse{t}{j}, 't' );
+                end
+            end
+        end
+    else
+    %##### 后面的帧跟从前面的上色
+        for j=1:n(t)
+            %##################### 1——（frame-1）帧中需要去路标记
+            if t<frame
+                if Fid{t}(j)==1
+                    CX_plot_event( Ellipse{t}{j}, 'd' );  %%母细胞标记
+                end
+               if Fiv{t}(j)==1
+                    CX_plot_event( Ellipse{t}{j}, 'v' );  %%下一帧分离标记
+                end
+                if Fit{t}(j)==1
+                    CX_plot_event( Ellipse{t}{j}, 't' );  %%消失细胞标记
+                end
+            end
+            %###################### 2——frame 帧中需要来路标记
+            %%新生成的随机选取一种颜色
+            if Fsj{t}(j)==1   
+                indc = randi(color_numbel);
+                CX_plot( Ellipse{t}{j}, color(indc,:) );
+                CX_plot_event( Ellipse{t}{j}, 's');   %%新出现细胞标记
+                Ellipse{t}{j}.color_index = indc;
+            end
+            
+            if Fmj{t}(j)==1   
+                CX_plot_event( Ellipse{t}{j}, 'm');   %%融合得来的细胞标记
+            end
+            
+            %%###########融合得来的细胞画为白色，同时记录下2个源细胞的颜色
+            if sum(Fij{t-1}(:,j))==2
+                ind_i = find(Fij{t-1}(:,j)==1);
+                CX_plot( Ellipse{t}{j}, [1 1 1] );
+                Ellipse{t}{j}.color_index = [ Ellipse{t-1}{ind_i(1)}.color_index, Ellipse{t-1}{ind_i(2)}.color_index ];
+            else
+            %%###########迁移细胞继承上一个的颜色
+                for i=1:n(t-1)
+                    if Fij{t-1}(i,j)==1  %Fiv{t-1}(i)==1 &&
+                        if numel(Ellipse{t-1}{i}.color_index)==2  %% 由merge 之后的分离得到，则领取各自的颜色
+                            CX_plot( Ellipse{t}{j}, color( Ellipse{t-1}{i}.color_index(1),:) );
+                            Ellipse{t}{j}.color_index = Ellipse{t-1}{i}.color_index(1);
+                            Ellipse{t-1}{i}.color_index = Ellipse{t-1}{i}.color_index(numel( Ellipse{t-1}{i}.color_index ));                            
+                        else  % 否则就继承源细胞的颜色
+                            CX_plot( Ellipse{t}{j}, color( Ellipse{t-1}{i}.color_index,:) );  
+                            Ellipse{t}{j}.color_index = Ellipse{t-1}{i}.color_index;
+                        end
+                    end
+                end
+            end
+            %######################
+        end
+    end
+    hold;
+    savename= strcat('C:\Users\Administrator\Desktop\tmp_track\original\跟踪标记\',fig_dir(t).name);
+    saveas(1,savename);
+    close('1');
+end
+
+%%
+screen_size = get(0,'ScreenSize');
+colored_fig_dir = dir('C:\Users\Administrator\Desktop\tmp_track\original\跟踪标记\*.fig');  
+for t=1:1%frame
+    fig_name = strcat('C:\Users\Administrator\Desktop\tmp_track\original\跟踪标记\', colored_fig_dir(t).name);
+    openfig(fig_name,'new','visible');
+    set(gcf,'Position',screen_size);
+end

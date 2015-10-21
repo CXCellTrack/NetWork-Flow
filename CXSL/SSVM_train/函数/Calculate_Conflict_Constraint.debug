@@ -1,0 +1,64 @@
+function [ F_j_jlus ] = Calculate_Conflict_Constraint( conflict, t, s_frame, fij, fit, fid, fiv, fmj, fsj,...
+    conflict_pair_last_xy, conflict_fij, conflict_pair_next_xy)
+% 
+% 这个是 CXSL_Calculate_Constraint_New_Conflict 中的内部函数
+% 写在外面仅用于外部调试
+% 
+
+F_j_jlus = []; % 用来表示j到jplus这一个前景内的矛盾
+
+%##########################此处计算出入口约束###############
+if t==s_frame % 第一帧考虑出口
+    
+    %### 第一帧2个矛盾细胞的出口和至多为1
+    for i=1:size(conflict,1)
+        sum_fmj = 0;
+        j = conflict(i,1); % 取到矛盾集中第一个细胞的编号
+        k = conflict(i,2);
+        constrain_sum1 = sum( fij{t}(k,:) ) + sum( fij{t}(j,:) ); % 迁移出口和
+        constrain_sum2 = fit{t}(k) + fit{t}(j);   % 消失出口和
+        constrain_sum3 = sum( fid{t}(k,:) ) + sum( fiv{t}(k,:) ) + sum( fid{t}(j,:) ) + sum( fiv{t}(j,:) );% 分离/分裂出口和
+        % sum_fmj 为融合出口和
+        tmp_xy_fmj = unique([ conflict_pair_last_xy{t}{j};conflict_pair_last_xy{t}{k} ], 'rows'); % 找出出口矛盾坐标，并去掉重复行 
+        for ind=1:size(tmp_xy_fmj,1)
+            sum_fmj = sum_fmj + fmj{t+1}( tmp_xy_fmj(ind,1), tmp_xy_fmj(ind,2) );
+        end
+        F_j_jlus = [ F_j_jlus, constrain_sum1 + constrain_sum2 + constrain_sum3 + sum_fmj <= 1 ];   %%出口唯一
+    end
+    % 算完return，不需要计算后面
+    return;
+end
+
+% 2—t帧考虑入口
+% 2个矛盾细胞的入口和至多为1
+for i=1:size(conflict,1)
+
+    j = conflict(i,1); % 取到矛盾集中第一个细胞的编号
+    k = conflict(i,2);
+    % ----------------------------------------------- %
+    sum_fij = 0;
+    % sum_fij 为所有迁移到 j 的fij之和（入口和），出口和可以用 sum(fij{t}(j,:)) 表示 
+    tmp_xy_fij =  unique([conflict_fij{t-1}{j};conflict_fij{t-1}{k}], 'rows');
+    for ind=1:size(tmp_xy_fij, 1)
+        sum_fij = sum_fij + fij{t-1}( tmp_xy_fij(ind,1), tmp_xy_fij(ind,2) );
+    end
+    % ----------------------------------------------- %
+    % 用 sum_fij_m 代替 sum( fij{t-1}(:,ind_j) )
+    constrain_sum4 = sum_fij + fsj{t}(j) + sum(fmj{t}(j,:)) + fsj{t}(k) + sum(fmj{t}(k,:)); % 迁移、出现、融合
+    % ----------------------------------------------- %
+    % sum_fid 为所有分裂出口和                
+    sum_fid = 0;
+    sum_fiv = 0;
+    tmp_xy_fidv = unique([conflict_pair_next_xy{t}{j};conflict_pair_next_xy{t}{k}], 'rows'); % 取到包含当前细胞 ind_j 的pair坐标矩阵
+    for ind=1:size(tmp_xy_fidv,1)
+        sum_fid = sum_fid + fid{t-1}( tmp_xy_fidv(ind,1), tmp_xy_fidv(ind,2) );
+        sum_fiv = sum_fiv + fiv{t-1}( tmp_xy_fidv(ind,1), tmp_xy_fidv(ind,2) );
+    end
+    % ----------------------------------------------- %
+    F_j_jlus = [ F_j_jlus, constrain_sum4 + sum_fid + sum_fiv <= 1 ]; %%2—n帧的入口和唯一
+end    
+
+end
+    
+
+

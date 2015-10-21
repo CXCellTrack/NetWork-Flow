@@ -1,0 +1,32 @@
+% ========================================================== %
+% 这个脚本用来研究 evaluation software 中的精度是如何计算得到的
+% 后续并无用处
+% ========================================================== %
+
+prec = zeros( size(textdata,1), 1 );
+for h=1:numel(textdata)/2
+    if textdata{h,1}(1)=='-' || textdata{h,1}(1)=='=';
+        continue;
+    end
+    begin = find(textdata{h,1}(:)=='J');
+    tmpprec = textdata{h,1}(begin+2:end);
+    prec(h,1) = str2double(tmpprec);
+end
+prec = prec(1:end-1);
+mean(prec)
+segmeasure = data;
+
+% 软件给出的segmeasure并不是前面所有精度的平均值。
+
+n0 = find(prec==0);
+time_mean = zeros(numel(n0)-1,1);
+for i=1:numel(n0)-1
+    time_mean(i) = mean(prec( n0(i):n0(i+1) ));
+end
+
+mean(time_mean(:))
+% 软件给出的segmeasure也不是每帧平均精度的平均值。
+% 目前不知道是怎么计算的，但与总均值较为接近
+    
+
+

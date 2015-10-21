@@ -1,0 +1,31 @@
+clear;close all
+z = load('E:\datasets\first editon\training datasets\N2DL-HeLa\01_GT\TRA\man_track.txt','r');
+[h,~] = size(z);
+num_move  = sum(z(:,3)-z(:,2));
+
+divide_index = find(z(:,4)~=0);
+num_divide = numel(divide_index)/2;
+
+appear_index1 = find(z(:,4)==0);   %%末位0表示没有母细胞
+appear_index2 = find(z(:,2)~=0);   %%不能是在t00上出现的
+appear_index = intersect(appear_index1, appear_index2);
+num_appear = numel(appear_index);
+
+flag = false(h,1);
+for i=1:h
+    if z(i,3)~=max(z(:,3)) && z(i,1)~=z(i+1,4)%%死亡不能消失在最后一步，也不能是分裂
+        flag(i) = 1;
+    end
+end
+num_death = sum(flag);
+
+sum = num_appear + num_death + num_divide + num_move;
+P_appear = num_appear/sum
+P_death = num_death/sum
+P_divide = num_divide/sum
+P_move = num_move/sum
+
+
+
+
+

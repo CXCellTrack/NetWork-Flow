@@ -1,0 +1,34 @@
+function [ overlap ] = CX_calculate_overlap(e1,e2)
+% ----------------------------------------------------------------------- %
+%
+% 这个函数是作为 CX_ellipse_optimal 的内部函数，此处出现仅用于debug
+% 用来计算2个椭圆之间的重叠度，重叠度大于一定值便认为2个椭圆为同一个，需删去一个
+%
+% ----------------------------------------------------------------------- %
+        c1=sqrt(e1.a^2-e1.b^2);   %%焦距
+        cc1=cosd(e1.alpha);
+        ss1=sind(e1.alpha);
+        c11=[c1*cc1+e1.x0,c1*ss1+e1.y0];
+        c12=[-c1*cc1+e1.x0,-c1*ss1+e1.y0];
+        
+        count1 = pi*e1.a*e1.b;
+        count2 = pi*e2.a*e2.b;
+        count=0;
+        
+        c2=sqrt(e2.a^2-e2.b^2);   %%焦距
+        cc2=cosd(e2.alpha);
+        ss2=sind(e2.alpha);
+        c21=[c2*cc2+e2.x0,c2*ss2+e2.y0];
+        c22=[-c2*cc2+e2.x0,-c2*ss2+e2.y0];
+
+        for x=e2.x0-e2.a : e2.x0+e2.a
+            for y=e2.y0-e2.a : e2.y0+e2.a
+                if sqrt((x-c21(1))^2+(y-c21(2))^2)+sqrt((x-c22(1))^2+(y-c22(2))^2)<=2*e2.a
+                    if sqrt((x-c11(1))^2+(y-c11(2))^2)+sqrt((x-c12(1))^2+(y-c12(2))^2)<=2*e1.a
+                        count=count+1;
+                    end
+                end
+            end
+        end
+        overlap=count/(count1+count2-count);
+end

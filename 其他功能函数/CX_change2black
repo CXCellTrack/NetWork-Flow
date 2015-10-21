@@ -1,0 +1,29 @@
+% 这个代码用于将JAVA生成的初始分割转化为带标签的分割，用于测试分割精度
+% 注意，这并非最终的分割，因为相连的细胞并没有被打上不同的标签，只是用于测试初始分割而已
+hwait=waitbar(0,'开始转换>>>>>>>>');
+JAVAaddr = 'E:\datasets\first editon\training datasets\N2DL-HeLa\01_RES\t13t52\JAVA_1\';
+imdir=dir([JAVAaddr, '*.tif']);
+
+for t=1:numel(imdir)
+    a=imread([ JAVAaddr, imdir(t).name ]);
+    b=im2double(a);
+    c=im2bw(b);
+    d=imfill(c,'holes');
+    stat = regionprops(d,'pixellist');
+    for i=1:numel(stat)
+        for u=1:numel(stat(i).PixelList)/2
+            w = stat(i).PixelList(u,1);
+            h = stat(i).PixelList(u,2);
+            a(h,w)=i;
+        end
+    end
+    a=uint16(a);
+    
+    if ~exist([ JAVAaddr, 'black\' ], 'dir')
+        mkdir([ JAVAaddr, 'black\' ]);
+    end   
+    imwrite(a,[ JAVAaddr, 'black\', imdir(t).name ]);
+    % 进度条增加
+    waitbar( t/numel(imdir), hwait, ['iteration ',num2str(t)]);
+end
+close(hwait);

@@ -1,0 +1,5 @@
+这里的代码用于计算椭圆的各事件特征，并测试其线性可分性
+
+BundleMethod 文件夹中的代码用于实现结构化学习 SSVM，获得最优的 w
+
+BundleMethod_Output_Test 文件夹中的代码用于测试 SSVM 中学习到的 w 在其他图片上的效果

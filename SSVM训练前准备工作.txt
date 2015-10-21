@@ -1,0 +1,10 @@
+1、首先运行 CX_Network 获得椭圆假说
+
+2、再运行 CX_ILP_Pair_Pre 得到优化后的椭圆cell和分裂等事件的4邻域表格
+
+3、运行 CX_RePlot_Ellipse 绘制新椭圆图形
+
+4、再运行 CX_Hand_Annotation 进行半自动人工标记
+
+
+之后就可以按照 SSVM 的训练步骤开始数据测试了
