@@ -1,6 +1,4 @@
-function [ e ] = CX_Hausdorff_Distance( e, r )
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+function [ e_row ] = CX_Hausdorff_Distance( e_row, r_row )
 %% °¼µãÊıÄ¿ÓëÍÖÔ²×ÜÊı¹ØÏµ±í
 % °¼µãÊıÄ¿    ÍÖÔ²×ÜÊı
 %   1           1
@@ -8,17 +6,19 @@ function [ e ] = CX_Hausdorff_Distance( e, r )
 %   3           7
 %   4           15
 %   5           31
+%   k          2^k-1
+
 %%
 
-flag = ~isemptycell(e);
+flag = ~isemptycell(e_row);
 % for n=1:size(e,1) % Ã¿¸öÇ°¾°
 width = sum(flag); % Ç°¾°ÖĞµÄ¼ÙËµÊıÄ¿
     
 for i=1:width
-    if e{i}.status==0 % status Îª0 ÔòÌø¹ı
+    if e_row{i}.status==0 % status Îª0 ÔòÌø¹ı
         continue;
     end
-    e{i} = calculate_distance(e{i} ,r{i}); % ÊäÈëµ±Ç°Ô²£¬µ±Ç°µã¼¯£¬µ±Ç°È«¼¯r{n,width}£¨ËÆºõÓÃ²»ÉÏ£©
+    e_row{i} = calculate_distance(e_row{i} ,r_row{i}); % ÊäÈëµ±Ç°Ô²£¬µ±Ç°µã¼¯£¬µ±Ç°È«¼¯r{n,width}£¨ËÆºõÓÃ²»ÉÏ£©
 end
 
 % end
@@ -31,7 +31,8 @@ function  [ e_n_i ]= calculate_distance( e_n_i ,r_n_i )  %%±ØĞëÒª°ÑÖµ´«µİ³öÀ´£¬²
     [ exy ] = ellipse_xy(e_n_i);
     rr = r_n_i*[0 1;1 0];        %%½«ÂÖÀª¾ØÕó2ÁĞ½»»»   rÊÇ¼Ì³Ğ×Ôedgelist,seglist£¬2¸ö¶¼ÊÇxyÏà·´µÄ£¬ĞèÒª»»Î»
 %     r_all = r_n_width*[0 1;1 0];   %%r_all±íÊ¾Õû¶ÎÂÖÀª
-    [hd ~] = HausdorffDist(rr ,exy, 1);    %%´Ëº¯ÊıÒÑ¾­¸ü¸ÄÎª¼ÆËãÍÖÔ²°üÎ§ÂÖÀªµÄ×î´ó×î¶Ì¾àÀë£¬¼´ÌùºÏ¶È¸ÅÄî
+    [ hd ~ ] = HausdorffDist(rr, exy, 1);    %%´Ëº¯ÊıÒÑ¾­¸ü¸ÄÎª¼ÆËãÍÖÔ²°üÎ§ÂÖÀªµÄ×î´ó×î¶Ì¾àÀë£¬¼´ÌùºÏ¶È¸ÅÄî
+    
     %% ¼ÆËãg£¨cl£¬e£©£¬Ä¿Ç°ÓĞµãÎÊÌâ£¬ÏÈ²»ÓÃ
 %     complement_rr=setdiff(r_all, rr, 'rows');  %%rrµÄ²¹¼¯£¬ÓÃÓÚ¼ÆËãg£¨cl£¬e£©
 %     flag= false(numel(complement_rr)/2,1);  %%±êÖ¾¾ØÕó
@@ -51,21 +52,21 @@ function  [ e_n_i ]= calculate_distance( e_n_i ,r_n_i )  %%±ØĞëÒª°ÑÖµ´«µİ³öÀ´£¬²
     %%
 %     gd=0;
     e_n_i.hd = hd;
-    e_n_i.num_pixels = numel(rr)/2; % 2015.5.25
+    e_n_i.num_pixels = size(rr,2); % 2015.5.25
 %     e_n_i.shape_yueshu = shape_yueshu;
 %     e_n_i.Cl_distance = (hd + gd)*shape_yueshu;  %%¾àÀë¹«Ê½
     
 end
 
-function [ exy ]= ellipse_xy(ee)   %%ÊäÈëÍÖÔ²e{i,j}£¬Êä³öÍÖÔ²ÉÏµÄµã¼¯ºÍ¹«Ê½ºó2Ïî,»¹ÓĞ2¸ö½¹µã
+function [ exy ]= ellipse_xy(e_n_i)   %%ÊäÈëÍÖÔ²e{i,j}£¬Êä³öÍÖÔ²ÉÏµÄµã¼¯ºÍ¹«Ê½ºó2Ïî,»¹ÓĞ2¸ö½¹µã
     % ·µ»ØÍÖÔ²ÖÜÉÏµÄµã×ø±ê
-    c=cosd(ee.alpha);
-    s=sind(ee.alpha);
-    polar_angle=linspace(0,180,181);
-    xq= ee.a*cosd(polar_angle);
-    yq= ee.b*sind(polar_angle);
-    xn=xq*c-yq*s+ee.x0;
-    yn=xq*s+yq*c+ee.y0;
+    c=cosd(e_n_i.alpha);
+    s=sind(e_n_i.alpha);
+    polar_angle=linspace(0,360,181);
+    xq= e_n_i.a*cosd(polar_angle);
+    yq= e_n_i.b*sind(polar_angle);
+    xn=xq*c-yq*s+e_n_i.x0;
+    yn=xq*s+yq*c+e_n_i.y0;
     exy=[xn',yn'];    %%µÃµ½ÍÖÔ²ÖÜÉÏµÄµã
 
 %     Ce=pi*sqrt(2*(ee.a^2+ee.b^2));    %%ÍÖÔ²ÖÜ³¤½üËÆ¹«Ê½

@@ -7,7 +7,7 @@ function [ phi_x_z ] = CXSL_Calculate_event_fai_x_zstar( s_frame, e_frame, hat_o
 % 载入特征
 dataset = 'training';
 [ ~, trackpath ] = getpath( dataset );
-load([ trackpath, '\结构化学习\Feature_Plus_New.mat']);
+load([ trackpath, '\结构化学习\Feature_New.mat']);
 % 载入标准答案GT
 load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
 
@@ -36,20 +36,20 @@ elseif strcmp(hat_or_star, 'star')
 %     tic;
     for t = s_frame:e_frame-1  
         
-        fai_fij = fai_fij + cell_dot_mutil( feature_fij_p{t}, Fij{t} );
+        fai_fij = fai_fij + cell_dot_mutil( feature_fij{t}, Fij{t} );
             
-        fai_fit = fai_fit + cell_dot_mutil( feature_fit_p{t}, Fit{t} ); %  加不加sum = 都一样
+        fai_fit = fai_fit + cell_dot_mutil( feature_fit{t}, Fit{t} ); %  加不加sum = 都一样
         
-        fai_fid = fai_fid + cell_dot_mutil( feature_fid_p{t}, Fid{t} );  
+        fai_fid = fai_fid + cell_dot_mutil( feature_fid{t}, Fid{t} );  
 		
-        fai_fiv = fai_fiv + cell_dot_mutil( feature_fiv_p{t}, Fiv{t} );         
+        fai_fiv = fai_fiv + cell_dot_mutil( feature_fiv{t}, Fiv{t} );         
     end
     
     for t = s_frame+1:e_frame
 	
-        fai_fmj = fai_fmj + cell_dot_mutil( feature_fmj_p{t}, Fmj{t} );
+        fai_fmj = fai_fmj + cell_dot_mutil( feature_fmj{t}, Fmj{t} );
 		
-        fai_fsj = fai_fsj + cell_dot_mutil( feature_fsj_p{t}, Fsj{t} );
+        fai_fsj = fai_fsj + cell_dot_mutil( feature_fsj{t}, Fsj{t} );
     end
 %     toc;
 end

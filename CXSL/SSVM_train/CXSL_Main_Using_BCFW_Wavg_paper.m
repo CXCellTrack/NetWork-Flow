@@ -14,51 +14,50 @@
 % 
 %
 % ======================================================================= %
+
+% 此方法每个样本都保存一个Wi，使得样本更新的时候总是从上一次的Wi=0开始
 clear;close all;
 
 [ ~, trackpath ] = getpath( 'training' );
 % 载入 CXSL_Test_Linear_all 中计算好的 w 作为初始值（实际发现效果并不好）
+
+load([ trackpath, '\结构化学习\initial_w_New.mat']);
+% 注意 w 的顺序不能乱
+w = [ wij, wit, wid, wiv, wmj, wsj ]';
+clear wij wit wid wiv wmj wsj;
+% 也可以选择随机的w或全0的w
 if 1
-    load([ trackpath, '\结构化学习\initial_w_New.mat']);
-    % 注意 w 的顺序不能乱
-    w = [ wij, wit, wid, wiv, wmj, wsj ]';
-    clear wij wit wid wiv wmj wsj
-else
-    % 随机选取w，种子控制 w 可复现
-    rng(0); 
-    w = rand(42,1);
-%     w = zeros(42,1);
+    dim = numel(w)-6; % initial_w是增广的
+    w = zeros(dim, 1);
 end
+
 % 定义样本个数 N 和 单个样本中的帧数 frame
-N = 8;
-frame = 10;
+N = 5;
+frame = 5;
 s_frame = zeros(N,1);
 e_frame = zeros(N,1);
 % 目前有gt的帧数，对随机取样有影响
-gt_frame = 80;
+gt_frame = 65;
 
 % 选择取样方式
 % 1为接龙取样，2为滑窗取样，3为随机取样
 sample_method = 1;
 switch sample_method
-    case 1
-        % 取样方法1：接龙取样
+    case 1 % 取样方法1：接龙取样
         % 按 1-5, 6-10, 11-15, 16-20 这样的方法取样本
         for ind=1:N
             s_frame(ind) = (ind - 1)*frame + 1;
             e_frame(ind) = s_frame(ind) + frame - 1;
         end
 
-    case 2
-        % 取样方法2：滑窗取样
+    case 2 % 取样方法2：滑窗取样
         % 按 1-5，2-6，3-7 这样的方法取样本
         for ind=1:N
             s_frame(ind) = ind;
             e_frame(ind) = s_frame(ind) + frame - 1;
         end
        
-    case 3
-        % 取样方法3：随机取样
+    case 3 % 取样方法3：随机取样
         rng(0);
         s_frame = randi([1 gt_frame-frame+1], [N 1]);
         e_frame = s_frame + frame - 1;        
@@ -75,32 +74,34 @@ end
 
 % 初始化： 定义A、B、循环次数上限 iter、间隙阈值 gap
 iter = 50;
-gap = 0.010; % 按照 O(1/gap) 的收敛速度，应该在百循环左右完成
-
+gap = 0.0010; % 按照 O(1/gap) 的收敛速度，应该在百循环左右完成
 gap_cur = zeros(iter,1); % 记录每次得到的gap
-
 gamma = zeros(iter,1); % 步长gamma
 
 W = cell(iter,1); % W 存放综合权值w
-Wi = w; % Wi 存放每次循环中特定样本更新后的Wi
-Wi_old = 0; % Wi_old 存放每次循环中特定样本更新前的Wi
-Ws = 0;
-L = zeros(iter,1); % L 存放综合L
-Li = 0; % Li 存放每次选中的样本更新后的L
-Li_old = 0; % Li_old 存放每次选中的样本更新前的L
-ls = 1; % 样本平均损失函数
-
+Wavg = cell(iter,1); % W 存放综合权值w
+Wi = cell(iter,N); % Wi存放样本权值w
+Wavg{1} = w;
 W{1} = w; % 全体样本的W需要设定初值w
+for i=1:N
+    Wi{1,i} = w; % Wi 存放每次循环中特定样本更新后的Wi
+end
+
+L = zeros(iter,1); % L 存放综合L
+Li = zeros(iter,N);
+for i=1:N
+    Li(1,i) = 0;
+end
+ls = 1; % 样本平均损失函数'
 
 t = 0;
 time = zeros(iter,1); % 记录每次循环所用的时间
-
 sample_loss = zeros(iter,N); % 记录每一轮中每个样本的损失函数
 aver_loss = zeros(iter,1); % 记录每一轮中样本损失函数均值
 % ======================================================================= %
-fai_x_z_hat = cell(N,1);
-delta_zstar_zhat = zeros(N,1);
-U_x_zstar_zhat = cell(N,1);
+% fai_x_z_hat = cell(N,1);
+% delta_zstar_zhat = zeros(N,1);
+% U_x_zstar_zhat = cell(N,1);
 % ======================================================================== %
 % 循环求解部分参数设置
 options = sdpsettings('verbose', 0, 'solver', 'cplex', 'saveduals', 0); % cplex设置放到循环外
@@ -123,8 +124,8 @@ for ind=1:N
 end
 
 fai_x_z = cell(N,1);
-fai_x_z_star = cell(N,1);
 sum_cost = cell(N,1);
+fai_x_z_star = cell(N,1);
 
 tic;
 % 计算 fai(x,z)和△(z*,z)，分配好流程变量
@@ -154,10 +155,9 @@ while t < iter && ls*N >= gap
     t = t + 1;
     
     % 记录下每次循环所用的时间
-    tic
+    tic;
     disp('  ==========================');
     disp(['  开始第 ', num2str(t), ' 轮循环...']);
-    
     % 可以选择随机抽一个样本或是按顺序来
     if random
         ind = randi(N); % 选中第ind个样本作为训练样本
@@ -172,13 +172,13 @@ while t < iter && ls*N >= gap
     
     disp(['      计算样本 ', num2str(ind), '...']); 
     % 临时组建目标函数并求解
-    object_function = dot(W{t}, fai_x_z{ind}) + sum_cost{ind};
+    object_function = dot(Wavg{t}, fai_x_z{ind}) + sum_cost{ind};
     sol = solvesdp( F{ind}, -object_function, options );
 
     % 输出得到的各个变量的值
     if sol.problem == 0      
-        fai_x_z_hat{ind} = value(fai_x_z{ind});
-        delta_zstar_zhat(ind) = value(sum_cost{ind});
+        fai_x_z_hat = value(fai_x_z{ind});
+        delta_zstar_zhat = value(sum_cost{ind});
     else
         sol.info
         yalmiperror(sol.problem)
@@ -191,11 +191,11 @@ while t < iter && ls*N >= gap
     
 %     for ind=1:N
         % 梯度 论文中fai(x,z*)-fai(x,z^)
-        U_x_zstar_zhat{ind} = fai_x_z_star{ind} - fai_x_z_hat{ind};
+        U_x_zstar_zhat = fai_x_z_star{ind} - fai_x_z_hat;
         % sum( ψ(x,z*,z^) )
-        sum_U = U_x_zstar_zhat{ind};
+        sum_U = U_x_zstar_zhat;
         % 保存每一轮中每个样本的损失函数
-        sample_loss(t, ind) = delta_zstar_zhat(ind);
+        sample_loss(t, ind) = delta_zstar_zhat;
 %     end
     % =================================================================== %
     % sum( △(z*,z^) ）
@@ -203,30 +203,38 @@ while t < iter && ls*N >= gap
     aver_loss(t) = sum_delta; 
     fprintf('      当前样本损失函数△(z*,z^):\t%f\n', aver_loss(t));
 
-    %% 3. 求解最优步长来更新w
-    
+    %% 3. 求解最优步长来更新Wavg
     % 定义惩罚项 lambda λ
-    lambda = 1e-2;
-	
+    lambda = 1e-2;	
     Ws = sum_U/(lambda*N);
     ls = sum_delta/N;
-    
     % 计算gap，gap的值随样本、lambda都会变化，无法确定下来，因此还是用loss做gap比较合适
-    gap_cur(t) = lambda*(Wi- Ws)'*W{t}- Li+ ls;
+    gap_cur(t+1) = lambda*(Wi{t,ind}- Ws)'*W{t}- Li(t,ind)+ ls;
     % 计算步长gamma
-    gamma(t) = gap_cur(t)/(lambda*norm(Wi- Ws)^2);
-    
-    % 更新 wi和Li，将更新后的w保存在 W{t+1,ind}中
-    Wi_old = Wi;
-    Li_old = Li;
-    Wi = (1- gamma(t))*Wi_old + gamma(t)*Ws;
-    Li = (1- gamma(t))*Li_old + gamma(t)*ls;
-    
-    % 更新 w和L，将更新后的w保存在 W{t+1,N+1}中
-    W{t+1} = W{t} + Wi - Wi_old;
-    L(t+1) = L(t) + Li - Li_old; % 计算L似乎没什么用？
+%     gamma(t) = gap_cur(t+1)/(lambda*norm(Wi{t,ind}- Ws)^2);
+    gamma(t) = 2*N/(2*N + t-1);
 
-    fprintf('      对偶间隙gap:\t%f\n', gap_cur(t));
+    % 更新 wi和Li，将更新后的w保存在 W{t+1,ind}中
+    % 对于Wi来说，由于上一次不一定选得是i，因此Wi{t,ind}可能为空的，会导致更新的时候似乎有问题？
+    % 2015.10.23 发现其实没有被选中的样本是直接将Wi带入了下轮！
+    Wi{t+1,ind} = (1- gamma(t))*Wi{t,ind}+ gamma(t)*Ws; 
+    Li(t+1,ind) = (1- gamma(t))*Li(t,ind)+ gamma(t)*ls;
+    % 对于此轮没轮到的样本，将其Wi和Li带入下一轮中
+    sample_not_used = setdiff(1:N,ind);
+    for jj=1:numel(sample_not_used)
+        inu = sample_not_used(jj); % 没被用到的样本编号
+        Wi{t+1,inu} = Wi{t,inu};
+        Li(t+1,inu) = Li(t,inu); % 直接将其Wi带入下一轮
+    end
+
+    % 更新 w和L，将更新后的w保存在 W{t+1,N+1}中
+    W{t+1} = W{t} + Wi{t+1,ind} - Wi{t,ind};
+    L(t+1) = L(t) + Li(t+1,ind) - Li(t,ind); % 计算L似乎没什么用？
+    
+    % 更新Wavg
+    Wavg{t+1} = (t-1)/(t+1)*Wavg{t} + 2/(t+1)*W{t+1};
+
+    fprintf('      对偶间隙gap:\t%f\n', gap_cur(t+1));
     % ==================================== %
     % 记录时间
     time(t) = toc;
@@ -243,15 +251,14 @@ end
 % 循环完成，打印信息
 if ls*N <= gap
     disp('  找到了当前gap下的最优解，算法终止');
-    
     % 保存最优分配方案和w
     t_best = t;
-    w_best = W{t_best}; % W{t-1}才是取到最佳 gap 值的那个w，随后更新得到的 W{t} gap可能增大了
+    w_best = Wavg{t}; % W{t}才是取到最佳 gap 值的那个w
     gap_best = ls*N;      
 else
     disp('  达到最大循环次数，算法终止');
     t_best = find(aver_loss==min(aver_loss(aver_loss~=0))); %  找到过程中损失最小的那个w作为 w_best
-    w_best = W{t_best};
+    w_best = Wavg{t_best};
     gap_best = aver_loss(t_best);
 end
 % 保存最佳w，用于测试其他帧精度
@@ -268,8 +275,10 @@ w_for_excel = w_best';
 plot(aver_loss, '-*');
 % 对得到的收敛曲线进行保存
 if 0
-    lossdir = 'C:\Users\Administrator\Desktop\SSVM实验结果\SSVM完整实验记录-9-30\BCFW\';
-    save([lossdir, 'loss_2_40_y.mat'], 'sample_loss');
+    name = 'loss_15_10_y';
+    lossdir = [ trackpath, '\训练结果记录\BCFWavg_New\'];
+    save([lossdir, name, '.mat'], 'aver_loss','sample_loss','w_best','Wavg');
+    saveas(1, [lossdir, name, '.fig']);
 end
 
 

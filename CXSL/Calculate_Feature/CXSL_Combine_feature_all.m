@@ -36,7 +36,7 @@ frame = numel(Ellipse);
 %% 计算单个椭圆的特征，加入到自身的struct中
 disp('计算椭圆自身特征...');
 tic;
-Ellipse = CXSL_Calculate_feature( Ellipse, rawpic_addr );
+Ellipse = CXSL_Calculate_Ellipse_feature( Ellipse, rawpic_addr );
 toc;
 
 %% 下面开始计算前后2帧椭圆特征差异
@@ -76,9 +76,8 @@ for t=1:frame-1
             fj_6_8 = [ e_j.feature.intensity.sum, e_j.feature.intensity.mean, e_j.feature.intensity.devia ];
             fk_6_8 = [ e_k.feature.intensity.sum, e_k.feature.intensity.mean, e_k.feature.intensity.devia ];
             diff_6_8 = (fj_6_8 - fk_6_8)';
-            % 合成move特征，最后补上一个1，作为增广特征 2015.6.24
+            % 合成move特征，最后补上一个1，作为增广特征 2015.6.24（后来移到mapmimax归一化中进行增广的处理）
             feature_fij{t}{j,mm} = [ diff_1_4; diff_5; diff_6_8 ];
-            feature_fij_p{t}{j,mm} = [ diff_1_4; diff_5; diff_6_8; 1 ]; 
 
         end      
 %         others = setdiff( 1:n(t+1),candidate_k );
@@ -132,8 +131,6 @@ for t=1:frame-1
             % 合成分裂特征，最后补上一个1，作为增广特征 2015.6.24
             feature_fid{t}{j,mm} = [ diff_intensity_sum, angle_patten, diff_sons_ec, diff_sons_size,...
                 diff_sons_intensity, shape_compact, father_ec, father_intensity ]';
-            feature_fid_p{t}{j,mm} = [ diff_intensity_sum, angle_patten, diff_sons_ec, diff_sons_size,...
-                diff_sons_intensity, shape_compact, father_ec, father_intensity, 1 ]';
         end
     end
 end
@@ -155,7 +152,6 @@ for t=2:frame
         feature_intensity = [ e_j.feature.intensity.sum, e_j.feature.intensity.mean, e_j.feature.intensity.devia ];
         % 最后补上一个1，作为增广特征 2015.6.24
         feature_fsj{t}{j,1} = [ s_d, feature_intensity ]';
-        feature_fsj_p{t}{j,1} = [ s_d, feature_intensity, 1 ]';
     end
 end
 toc
@@ -176,7 +172,6 @@ for t=1:frame-1
         feature_intensity = [ e_j.feature.intensity.sum, e_j.feature.intensity.mean, e_j.feature.intensity.devia ];
          % 最后补上一个1，作为增广特征 2015.6.24
         feature_fit{t}{j,1} = [ s_d, feature_intensity ]';
-        feature_fit_p{t}{j,1} = [ s_d, feature_intensity, 1 ]';
     end
 end
 toc
@@ -213,7 +208,6 @@ for t=1:frame-1
 %             source_fitness = father.hd;
             % 最后补上一个1，作为增广特征 2015.6.24
             feature_fiv{t}{j,mm} = [ diff_intensity_sum, diff_size_sum, shape_compact, diff_sons_size ]';
-            feature_fiv_p{t}{j,mm} = [ diff_intensity_sum, diff_size_sum, shape_compact, diff_sons_size, 1 ]';
         end
     end
 end
@@ -251,7 +245,6 @@ for t=2:frame
 %             source_fitness = father.hd;
             % 最后补上一个1，作为增广特征 2015.6.24
             feature_fmj{t}{j,mm} = [ diff_intensity_sum, diff_size_sum, shape_compact, diff_sons_size ]';
-            feature_fmj_p{t}{j,mm} = [ diff_intensity_sum, diff_size_sum, shape_compact, diff_sons_size 1 ]';
         end
     end
 end
@@ -270,7 +263,6 @@ for t=1:frame-1
         feature_intensity = [ Ellipse{t}{j}.feature.intensity.sum, Ellipse{t}{j}.feature.intensity.mean, Ellipse{t}{j}.feature.intensity.devia ];
         % 最后补上一个1，作为增广特征 2015.6.24
         feature_ffd{t}{j,1} = [ p_s, feature_intensity, Ellipse{t}{j}.feature.dist2border ]';
-        feature_ffd_p{t}{j,1} = [ p_s, feature_intensity, Ellipse{t}{j}.feature.dist2border, 1 ]';
     end
 end
 toc
@@ -301,9 +293,9 @@ toc
 %% 保存特征数据
 disp('  保存数据');
 % 原始特征只有在计算 SVM 的时候有用
-save(Feature_New_addr, 'feature_ffd','feature_fid','feature_fij','feature_fit','feature_fiv','feature_fmj','feature_fsj');
+save(Feature_New_addr, 'feature_fid','feature_fij','feature_fit','feature_fiv','feature_fmj','feature_fsj');
 % 增广特征另存一下
-save(Feature_Plus_New_addr, 'feature_ffd_p','feature_fid_p','feature_fij_p','feature_fit_p','feature_fiv_p','feature_fmj_p','feature_fsj_p');
+save(Feature_Plus_New_addr, 'feature_fid_p','feature_fij_p','feature_fit_p','feature_fiv_p','feature_fmj_p','feature_fsj_p');
 
      
         

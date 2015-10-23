@@ -84,58 +84,58 @@ else
 end
 
 if largeMat
-% we cannot save all distances, so loop through every point saving only
-% those that are the best value so far
+    % we cannot save all distances, so loop through every point saving only
+    % those that are the best value so far
 
-maxP = 0;           % initialize our max value
-% loop through all points in P looking for maxes
-for p = 1:sP(1)
-    % calculate the minimum distance from points in P to Q
-    minP = min(sum( bsxfun(@minus,P(p,:),Q).^2, 2));
-    if minP>maxP
-        % we've discovered a new largest minimum for P
-        maxP = minP;
+    maxP = 0;           % initialize our max value
+    % loop through all points in P looking for maxes
+    for p = 1:sP(1)
+        % calculate the minimum distance from points in P to Q
+        minP = min(sum( bsxfun(@minus,P(p,:),Q).^2, 2));
+        if minP>maxP
+            % we've discovered a new largest minimum for P
+            maxP = minP;
+        end
     end
-end
-% repeat for points in Q
-maxQ = 0;
-for q = 1:sQ(1)
-    minQ = min(sum( bsxfun(@minus,Q(q,:),P).^2, 2));
-    if minQ>maxQ
-        maxQ = minQ;
+    % repeat for points in Q
+    maxQ = 0;
+    for q = 1:sQ(1)
+        minQ = min(sum( bsxfun(@minus,Q(q,:),P).^2, 2));
+        if minQ>maxQ
+            maxQ = minQ;
+        end
     end
-end
-% hd = sqrt(max([maxP maxQ]));%%
-hd = sqrt(maxP);%%现在只使用椭圆包围轮廓的距离，因此采用这个
-D = [];
+    % hd = sqrt(max([maxP maxQ]));%%
+    hd = sqrt(maxP); % 现在只使用椭圆包围轮廓的距离，因此采用这个
+    D = [];
     
 else
-% we have enough memory to build the distance matrix, so use this code
-    
-% obtain all possible point comparisons
-iP = repmat(1:sP(1),[1,sQ(1)])';
-iQ = repmat(1:sQ(1),[sP(1),1]);
-combos = [iP,iQ(:)];
+    % we have enough memory to build the distance matrix, so use this code
 
-% get distances for each point combination
-cP=P(combos(:,1),:); cQ=Q(combos(:,2),:);
-dists = sqrt(sum((cP - cQ).^2,2));
+    % obtain all possible point comparisons
+    iP = repmat(1:sP(1),[1,sQ(1)])';
+    iQ = repmat(1:sQ(1),[sP(1),1]);
+    combos = [iP,iQ(:)];
 
-% Now create a matrix of distances where D(n,m) is the distance of the nth
-% point in P from the mth point in Q. The maximum distance from any point
-% in Q from P will be max(D,[],1) and the maximum distance from any point
-% in P from Q will be max(D,[],2);
-D = reshape(dists,sP(1),[]);
+    % get distances for each point combination
+    cP=P(combos(:,1),:); cQ=Q(combos(:,2),:);
+    dists = sqrt(sum((cP - cQ).^2,2));
 
-% Obtain the value of the point, p, in P with the largest minimum distance
-% to any point in Q.
-vp = max(min(D,[],2));%%P到Q的最大最短距离，即轮廓到椭圆的最大最短距离 p,q=r,e
-% Obtain the value of the point, q, in Q with the largets minimum distance
-% to any point in P.
-vq = max(min(D,[],1));%%椭圆到轮廓的最大最短距离
+    % Now create a matrix of distances where D(n,m) is the distance of the nth
+    % point in P from the mth point in Q. The maximum distance from any point
+    % in Q from P will be max(D,[],1) and the maximum distance from any point
+    % in P from Q will be max(D,[],2);
+    D = reshape(dists,sP(1),[]);
 
-% hd = max(vp,vq);
-hd = vp;%(选择椭圆包围轮廓的最小距离)
+    % Obtain the value of the point, p, in P with the largest minimum distance
+    % to any point in Q.
+    vp = max(min(D,[],2));%%P到Q的最大最短距离，即轮廓到椭圆的最大最短距离 p,q=r,e
+    % Obtain the value of the point, q, in Q with the largets minimum distance
+    % to any point in P.
+    vq = max(min(D,[],1));%%椭圆到轮廓的最大最短距离
+
+    % hd = max(vp,vq);
+    hd = vp;%(选择椭圆包围轮廓的最小距离)
 
 end
 

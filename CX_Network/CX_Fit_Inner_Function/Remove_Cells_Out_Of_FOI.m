@@ -1,6 +1,9 @@
 %% 函数1：划定foi感兴趣的区域
 function bw = Remove_Cells_Out_Of_FOI( bw, foi )
 
+if foi==0
+    return;
+end
 % foi = 28;
 
 [ height, width ] = size(bw);

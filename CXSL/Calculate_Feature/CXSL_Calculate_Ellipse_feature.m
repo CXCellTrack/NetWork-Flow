@@ -1,4 +1,4 @@
-function  e = CXSL_Calculate_feature( e, dataset_addr )
+function  e = CXSL_Calculate_Ellipse_feature( e, dataset_addr )
 % structured learing部分——特征提取
 %   Detailed explanation goes here
 frame = numel(e);

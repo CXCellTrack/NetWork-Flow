@@ -7,7 +7,7 @@ function [ fai_x_z ] = CXSL_Calculate_fai_x_zstar_New( s_frame, e_frame, str)
 % 载入特征
 dataset = 'training';
 [ ~, trackpath ] = getpath( dataset );
-load([ trackpath, '\结构化学习\Feature_Plus_New.mat']);
+load([ trackpath, '\结构化学习\Feature_New.mat']);
 % 载入标准答案GT
 load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
 
@@ -21,14 +21,14 @@ fai_fsj = 0;
 if strcmp(str, 'hat') % 这部分已经由ILP的结果中value出，无需重新计算
     % 计算当前w下的fai(x,z^)
     for t = s_frame:e_frame-1   
-        fai_fij = fai_fij + cell_dot_mutil( feature_fij_p{t}, Fij_c{t} );
-        fai_fit = fai_fit + cell_dot_mutil( feature_fit_p{t}, Fit_c{t} );
-        fai_fid = fai_fid + cell_dot_mutil( feature_fid_p{t}, Fid_c{t} );
-        fai_fiv = fai_fiv + cell_dot_mutil( feature_fiv_p{t}, Fiv_c{t} );   
+        fai_fij = fai_fij + cell_dot_mutil( feature_fij{t}, Fij_c{t} );
+        fai_fit = fai_fit + cell_dot_mutil( feature_fit{t}, Fit_c{t} );
+        fai_fid = fai_fid + cell_dot_mutil( feature_fid{t}, Fid_c{t} );
+        fai_fiv = fai_fiv + cell_dot_mutil( feature_fiv{t}, Fiv_c{t} );   
     end
     for t = s_frame+1:e_frame
-        fai_fmj = fai_fmj + cell_dot_mutil( feature_fmj_p{t}, Fmj_c{t} );  
-        fai_fsj = fai_fsj + cell_dot_mutil( feature_fsj_p{t}, Fsj_c{t} );
+        fai_fmj = fai_fmj + cell_dot_mutil( feature_fmj{t}, Fmj_c{t} );  
+        fai_fsj = fai_fsj + cell_dot_mutil( feature_fsj{t}, Fsj_c{t} );
     end
     
 elseif strcmp(str, 'star')
@@ -36,20 +36,20 @@ elseif strcmp(str, 'star')
 %     tic;
     for t = s_frame:e_frame-1  
         
-        fai_fij = fai_fij + cell_dot_mutil( feature_fij_p{t}, Fij{t} );
+        fai_fij = fai_fij + cell_dot_mutil( feature_fij{t}, Fij{t} );
             
-        fai_fit = fai_fit + cell_dot_mutil( feature_fit_p{t}, Fit{t} ); %  加不加sum = 都一样
+        fai_fit = fai_fit + cell_dot_mutil( feature_fit{t}, Fit{t} ); %  加不加sum = 都一样
         
-        fai_fid = fai_fid + cell_dot_mutil( feature_fid_p{t}, Fid{t} );  
+        fai_fid = fai_fid + cell_dot_mutil( feature_fid{t}, Fid{t} );  
 		
-        fai_fiv = fai_fiv + cell_dot_mutil( feature_fiv_p{t}, Fiv{t} );         
+        fai_fiv = fai_fiv + cell_dot_mutil( feature_fiv{t}, Fiv{t} );         
     end
     
     for t = s_frame+1:e_frame
 	
-        fai_fmj = fai_fmj + cell_dot_mutil( feature_fmj_p{t}, Fmj{t} );
+        fai_fmj = fai_fmj + cell_dot_mutil( feature_fmj{t}, Fmj{t} );
 		
-        fai_fsj = fai_fsj + cell_dot_mutil( feature_fsj_p{t}, Fsj{t} );
+        fai_fsj = fai_fsj + cell_dot_mutil( feature_fsj{t}, Fsj{t} );
     end
 %     toc;
 end

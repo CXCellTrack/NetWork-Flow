@@ -9,7 +9,7 @@
 clear;close all;
 
 %% 指定在哪个数据集上进行计算（training or competition）
-if 1
+if 0
     dataset = 'competition';
     disp('<选定测试集>');
 else
@@ -21,7 +21,7 @@ end
 % 指定测试帧的范围
 segdir = dir([ segpath, '\*.tif']);
 s_frame = 1;
-e_frame = numel(segdir);
+e_frame = 65%numel(segdir);
 % 指定是否存在GT，如果存在，则计算精度等指标，否则不需要算
 exist_GT = 1;
 disp(['  计算 ',num2str(s_frame), '—',num2str(e_frame), ' 帧的目标函数和约束条件...']);
@@ -66,8 +66,8 @@ clearvars -except F object_function s_frame e_frame  fij fid fiv fit fsj fmj los
 % 注意，原先采用先算出 fai(x,z) = <feature,z>，在计算 obj = <w,fai(x,z)>;
 % 现在采用先计算 <w,feature>，在计算 obj = <w,feature>*z，速度得到了明显提升
 % 但这是针对于一次计算而言，如果在循环中每次都要这么计算目标函数，速度还是没有原方法快 2015.6.24
-options = sdpsettings('verbose',0,'solver','gurobi');
-% options = sdpsettings('verbose',0,'solver','cplex','saveduals',0);
+% options = sdpsettings('verbose',0,'solver','gurobi');
+options = sdpsettings('verbose',0,'solver','cplex','saveduals',0);
 sol = solvesdp( F, -object_function, options )
 
 Fij = cell(e_frame-1,1);

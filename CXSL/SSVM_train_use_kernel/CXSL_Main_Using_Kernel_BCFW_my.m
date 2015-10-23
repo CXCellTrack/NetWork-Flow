@@ -17,11 +17,11 @@
 clear;close all;
 
 [ ~, trackpath ] = getpath( 'training' );
-load([ trackpath, '\结构化学习\Feature_Plus_New.mat']); % 载入特征
+load([ trackpath, '\结构化学习\Feature_New.mat']); % 载入特征
 
 % 定义样本个数 N 和 单个样本中的帧数 frame
 N = 5;
-frame = 13;
+frame = 5;
 s_frame = zeros(N,1);
 e_frame = zeros(N,1);
 % 目前有gt的帧数，对随机取样有影响
@@ -64,7 +64,7 @@ gap = 0.0010;
 %% ------------------ 核函数所用到的变量 ----------------- % 
 % 设置6个事件的核函数种类以及参数（可选核函数为linear、poly、rbf、sigmoid）
 % 6个事件依次为fij、fit、fid、fiv、fmj、fsj
-kernel_type = {'linear','linear','rbf','linear','linear','linear'};
+kernel_type = {'linear','linear','linear','linear','linear','linear'};
 cmd = {'-d 2 -g 1','-d 2 -g 1','-d 2 -g 1','-d 2 -g 1','-d 2 -g 1','-d 2 -g 1'};
 
 alpha_i = cell(1,N); % N个样本，每个样本一个alpha_i
@@ -78,7 +78,7 @@ for ii=1:N
     end
 end
 
-alpha_all = cell(iter,1);
+alpha_all = cell(iter,1); % 所有样本alpha的组合
 for tt=1:iter
     alpha_all{tt} = cell(6,1);
 end
@@ -93,8 +93,14 @@ for tt=1:iter
     phi_y_all{tt} = cell(6,1); % phi_y_all为所有样本phi的集合
 end
 
+psi_y_all = cell(iter,1);
+for tt=1:iter
+    psi_y_all{tt} = cell(6,1); % psi_y_all为所有样本psi的集合
+end
+
 K_phi = cell(6,1);
 phi_x_z_hat = cell(6,1);
+n_SV = zeros(N,6);
 
 %% ------------------ 循环中用到的变量 -------------------- %
 % ======================================================================= %
@@ -108,8 +114,8 @@ sample_loss = zeros(iter,N); % 记录每一轮中每个样本的损失函数
 aver_loss = zeros(iter,1); % 记录每一轮中样本损失函数均值
 % ======================================================================= %
 % 循环求解部分参数设置
-options = sdpsettings('verbose', 0, 'solver', 'gurobi');
-% options = sdpsettings('verbose', 0, 'solver', 'cplex', 'saveduals', 0); % cplex设置放到循环外
+% options = sdpsettings('verbose', 0, 'solver', 'gurobi');
+options = sdpsettings('verbose', 0, 'solver', 'cplex', 'saveduals', 0); % cplex设置放到循环外
 rng(0); % 含有随机选择部分，需要设定种子
 random = 0; % 变量random作为一个flag，为1时是随机抽样，为0时是按顺序抽样
 ind = 0;
@@ -167,7 +173,7 @@ while (t < iter && ls >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必
     t = t + 1;
     
     % 记录下每次循环所用的时间
-    tic;
+    tstart = clock;
     disp('  ==========================');
     disp(['  开始第 ', num2str(t), ' 轮循环...']);
     % 可以选择随机抽一个样本或是按顺序来
@@ -189,6 +195,9 @@ while (t < iter && ls >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必
     for ii=1:N
         for ev=1:6
             phi_y_all{t}{ev} = [ phi_y_all{t}{ev}, phi_y_i{ii}{ev}];
+            % 将向量phi*复制到与phi_y_i相同的长度，再相减得到psi
+            psi_y_i = repmat(phi_x_z_star{ii}{ev},1,size(phi_y_i{ii}{ev},2)) - phi_y_i{ii}{ev};
+            psi_y_all{t}{ev} = [ psi_y_all{t}{ev}, psi_y_i];
         end
     end
     for ii=1:N
@@ -197,6 +206,13 @@ while (t < iter && ls >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必
         end
     end
 
+    % 计算各个样本的支持向量个数（可供查看）
+    for ii=1:N
+        for ev=1:6
+            n_SV(ii,ev) = numel(alpha_i{ii}{ev});
+        end
+    end
+    
     %% 2. 临时组建目标函数并求解
     % 目标函数表达式：
     % H(y） = sigma[ alpha(i)*K(psi(i), phi(y)) ] + L(y)*lambda*N
@@ -207,7 +223,7 @@ while (t < iter && ls >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必
     for ev=1:6
         % 使用非线性核时这个内积用其他核函数代替
         % 并且按不同事件可以使用不同核
-        psi = repmat(phi_x_z_star{ind}{ev},1,size(phi_y_all{t}{ev},2)) - phi_y_all{t}{ev};
+        psi = psi_y_all{t}{ev};
         alpha = alpha_all{t}{ev};
         
         % 使用info来记录phi2的相关信息（计算kernel是用的feature而不是phi2）
@@ -215,10 +231,17 @@ while (t < iter && ls >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必
         info.ev = ev;
         info.s_frame = s_frame(ind);
         info.e_frame = e_frame(ind);
-        % 选择核
-    	K_phi{ev} = ssvm_kernel_train(psi, alpha, info, kernel_type{ev}, cmd{ev},...
-            fij, fit, fid, fiv, fmj, fsj,...
-    feature_fij_p, feature_fit_p, feature_fid_p, feature_fiv_p, feature_fmj_p, feature_fsj_p);
+        % 选择核（目前有2种feature方案，加1的增广和不加的原始）
+        % 因此需要判断下前面载入的是哪个特征
+        if exist('feature_fij', 'var')
+            K_phi{ev} = ssvm_kernel_train(psi, alpha, info, kernel_type{ev}, cmd{ev},...
+                        fij, fit, fid, fiv, fmj, fsj,...
+                        feature_fij, feature_fit, feature_fid, feature_fiv, feature_fmj, feature_fsj);    
+        elseif exist('feature_fij_p', 'var')
+            K_phi{ev} = ssvm_kernel_train(psi, alpha, info, kernel_type{ev}, cmd{ev},...
+                        fij, fit, fid, fiv, fmj, fsj,...
+                        feature_fij_p, feature_fit_p, feature_fid_p, feature_fiv_p, feature_fmj_p, feature_fsj_p);
+        end
 
         K_phi_all = K_phi_all + K_phi{ev}; % 目标函数表达式需要将所有事件加起来
     end
@@ -230,7 +253,7 @@ while (t < iter && ls >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必
         for ev=1:6
             phi_x_z_hat{ev} = value(phi_x_z{ind}{ev});
         end
-            delta_zstar_zhat = value(sum_cost{ind});
+        delta_zstar_zhat = value(sum_cost{ind});
     else
         sol.info
         yalmiperror(sol.problem)
@@ -240,6 +263,8 @@ while (t < iter && ls >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必
     
     %% 3. 判断s对应的phi之前是否出现过，并更新alpha
     % 将得到的phi_x_z_hat与之前所有的phi进行比较
+    % 实际上，如果2个y不相同，但得到的phi有可能相同，因此通过比较phi来确定y是否一样不严谨
+    % 正确的方法应该通过比较y来进行，但只要phi相同，alpha对phi组合之后的结果还是一样，因此无本质区别
     for ev=1:6 % 每个事件分别更新
         flag_equal = 0;
         n_phi = size(phi_y_i{ind}{ev},2); % 当前样本支持向量的个数
@@ -277,7 +302,7 @@ while (t < iter && ls >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必
     aver_loss(t) = ls; 
     fprintf('      当前样本损失函数△(z*,z^):\t%f\n', aver_loss(t));
     % 记录时间
-    time(t) = toc;
+    time(t) = etime(clock, tstart);
 %     fprintf('      近似间隙 ε:\t%f\n', gap_cur);
     fprintf('      时间花费:\t%1.2f s\n', time(t)); 
     
@@ -291,6 +316,7 @@ if ls*N <= gap
 else
     disp('  达到最大循环次数，算法终止');
     t_best = find(aver_loss==min(aver_loss(aver_loss~=0))); %  找到过程中损失最小的那个w作为 w_best   
+    t_best
     t_best = t_best(end);
 end   
 

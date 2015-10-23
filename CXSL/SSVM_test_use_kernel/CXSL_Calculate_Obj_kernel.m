@@ -12,7 +12,7 @@ function object_function = CXSL_Calculate_Obj_kernel( dataset, s_frame, e_frame,
 % ----------------------------------------------------------------------- %
 % 载入特征
 [ ~, trackpath ] = getpath( dataset );
-load([ trackpath, '\结构化学习\Feature_Plus_New.mat']);
+load([ trackpath, '\结构化学习\Feature_New.mat']);
 % ----------------------------------------------------------------------- %
 
 obj_ij = 0;
@@ -26,11 +26,11 @@ for tt=s_frame:e_frame-1
     %% ------------------------- fij -------------------------- %
     ev = 1;
     n_A = size(A_best{ev},2);
-    n_F = numel(feature_fij_p{tt});    
+    n_F = numel(feature_fij{tt});    
     K = zeros(n_A, n_F);
     for i=1:n_A
         for j=1:n_F         
-            K(i,j) = svm_kernel(A_best{ev}(:,i), feature_fij_p{tt}{j}, kernel_type{ev}, cmd{ev});
+            K(i,j) = svm_kernel(A_best{ev}(:,i), feature_fij{tt}{j}, kernel_type{ev}, cmd{ev});
         end
     end
     % 当前帧的目标函数为(1,n_A) * (n_A,n_F) * (n_F,1) 
@@ -40,11 +40,11 @@ for tt=s_frame:e_frame-1
     %% ------------------------- fit -------------------------- %
     ev = 2;
     n_A = size(A_best{ev},2);
-    n_F = numel(feature_fit_p{tt});    
+    n_F = numel(feature_fit{tt});    
     K = zeros(n_A, n_F);
     for i=1:n_A
         for j=1:n_F         
-            K(i,j) = svm_kernel(A_best{ev}(:,i), feature_fit_p{tt}{j}, kernel_type{ev}, cmd{ev});
+            K(i,j) = svm_kernel(A_best{ev}(:,i), feature_fit{tt}{j}, kernel_type{ev}, cmd{ev});
         end
     end
     % 当前帧的目标函数为(1,n_A) * (n_A,n_F) * (n_F,1) 
@@ -54,11 +54,11 @@ for tt=s_frame:e_frame-1
     %% ------------------------- fid -------------------------- %
     ev = 3;
     n_A = size(A_best{ev},2);
-    n_F = numel(feature_fid_p{tt});    
+    n_F = numel(feature_fid{tt});    
     K = zeros(n_A, n_F);
     for i=1:n_A
         for j=1:n_F         
-            K(i,j) = svm_kernel(A_best{ev}(:,i), feature_fid_p{tt}{j}, kernel_type{ev}, cmd{ev});
+            K(i,j) = svm_kernel(A_best{ev}(:,i), feature_fid{tt}{j}, kernel_type{ev}, cmd{ev});
         end
     end
     % 当前帧的目标函数为(1,n_A) * (n_A,n_F) * (n_F,1) 
@@ -68,11 +68,11 @@ for tt=s_frame:e_frame-1
     %% ------------------------- fiv -------------------------- %
     ev = 4;
     n_A = size(A_best{ev},2);
-    n_F = numel(feature_fiv_p{tt});    
+    n_F = numel(feature_fiv{tt});    
     K = zeros(n_A, n_F);
     for i=1:n_A
         for j=1:n_F         
-            K(i,j) = svm_kernel(A_best{ev}(:,i), feature_fiv_p{tt}{j}, kernel_type{ev}, cmd{ev});
+            K(i,j) = svm_kernel(A_best{ev}(:,i), feature_fiv{tt}{j}, kernel_type{ev}, cmd{ev});
         end
     end
     % 当前帧的目标函数为(1,n_A) * (n_A,n_F) * (n_F,1) 
@@ -84,11 +84,11 @@ for tt=s_frame+1:e_frame
     %% ------------------------- fmj -------------------------- %
     ev = 5;
     n_A = size(A_best{ev},2);
-    n_F = numel(feature_fmj_p{tt});    
+    n_F = numel(feature_fmj{tt});    
     K = zeros(n_A, n_F);
     for i=1:n_A
         for j=1:n_F         
-            K(i,j) = svm_kernel(A_best{ev}(:,i), feature_fmj_p{tt}{j}, kernel_type{ev}, cmd{ev});
+            K(i,j) = svm_kernel(A_best{ev}(:,i), feature_fmj{tt}{j}, kernel_type{ev}, cmd{ev});
         end
     end
     % 当前帧的目标函数为(1,n_A) * (n_A,n_F) * (n_F,1) 
@@ -98,11 +98,11 @@ for tt=s_frame+1:e_frame
     %% ------------------------- fsj -------------------------- %
     ev = 6;
     n_A = size(A_best{ev},2);
-    n_F = numel(feature_fsj_p{tt});    
+    n_F = numel(feature_fsj{tt});    
     K = zeros(n_A, n_F);
     for i=1:n_A
         for j=1:n_F         
-            K(i,j) = svm_kernel(A_best{ev}(:,i), feature_fsj_p{tt}{j}, kernel_type{ev}, cmd{ev});
+            K(i,j) = svm_kernel(A_best{ev}(:,i), feature_fsj{tt}{j}, kernel_type{ev}, cmd{ev});
         end
     end
     % 当前帧的目标函数为(1,n_A) * (n_A,n_F) * (n_F,1) 
