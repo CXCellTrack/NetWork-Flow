@@ -17,7 +17,17 @@
 clear;close all;
 
 [ ~, trackpath ] = getpath( 'training' );
-load([ trackpath, '\结构化学习\Feature_New.mat']); % 载入特征
+% 载入 CXSL_Test_Linear_all 中计算好的 w 作为初始值
+load([ trackpath, '\结构化学习\initial_w_New.mat']);
+% 注意 w 的顺序不能乱
+w = cell(1,6); % 将w也分事件
+w{1} = zeros(numel(wij)-1,1);
+w{2}= zeros(numel(wit)-1,1);
+w{3} = zeros(numel(wid)-1,1);
+w{4} = zeros(numel(wiv)-1,1);
+w{5} = zeros(numel(wmj)-1,1);
+w{6} = zeros(numel(wsj)-1,1);
+
 
 % 定义样本个数 N 和 单个样本中的帧数 frame
 N = 5;
@@ -61,25 +71,62 @@ end
 iter = 50;
 gap = 0.0010;
 
-%% ------------------ 核函数所用到的变量 ----------------- % 
+%% ------------------ 线性w所用到的变量 ---------------------- %
+W = cell(iter,6); % W 存放综合权值w
+Wi = cell(iter,N); % Wi存放样本权值w
+for ev=1:6
+    W{1,ev} = w{ev};% 全体样本的W需要设定初值w
+end
+for i=1:N
+    Wi{1,i} = cell(1,6); % Wi 存放每次循环中特定样本更新后的Wi
+    for ev=1:6
+        Wi{1,i}{ev} = w{ev};% 全体样本的W需要设定初值w
+    end 
+end
+
+% 这个就不要L了
+ls = 1; % 样本平均损失函数
+
+%% ------------------ alpha核函数所用到的变量 ----------------- % 
 % 设置6个事件的核函数种类以及参数（可选核函数为linear、poly、rbf、sigmoid）
 % 6个事件依次为fij、fit、fid、fiv、fmj、fsj
-kernel_type = {'linear','linear','linear','linear','linear','linear'};
+kernel_type = {'linear','linear','line','linear','linear','linear'};
 cmd = {'-d 2 -g 1','-d 2 -g 1','-d 2 -g 1','-d 2 -g 1','-d 2 -g 1','-d 2 -g 1'};
+islinear = strncmp(kernel_type, 'linear', 6); % 逻辑矩阵，用于指示哪些事件是线性
 
-alpha_i = cell(N,6); % N个样本，每个样本一个alpha_i
+alpha_i = cell(1,N); % N个样本，每个样本一个alpha_i
+for ii=1:N
+    alpha_i{ii} = cell(6,1); % 6种细胞事件
+    % alpha中的每个都为列向量
+end
 for ii=1:N
     for ev=1:6
-        alpha_i{ii,ev} = 1;
+        alpha_i{ii}{ev} = 1;
     end
 end
 
-phi_y_i = cell(N,6);
-y_i = cell(N,6); % 支持向量phi对应的y
+alpha_all = cell(iter,1); % 所有样本alpha的组合
+for tt=1:iter
+    alpha_all{tt} = cell(1,6);
+end
 
-Y_i_star_K_Ytrain = cell(1,6);
-Y_i_K_Ytrain = cell(1,6);
-phi_x_z_hat = cell(1,6);
+phi_y_i = cell(1,N);
+for ii=1:N
+    phi_y_i{ii} = cell(1,6); % phi_y_i为d*m矩阵，单个样本phi的集合
+end
+
+phi_y_all = cell(iter,1);
+for tt=1:iter
+    phi_y_all{tt} = cell(1,6); % phi_y_all为所有样本phi的集合
+end
+
+psi_y_all = cell(iter,1);
+for tt=1:iter
+    psi_y_all{tt} = cell(1,6); % psi_y_all为所有样本psi的集合
+end
+
+K_phi = cell(6,1);
+phi_x_z_hat = cell(6,1);
 n_SV = zeros(N,6);
 
 %% ------------------ 循环中用到的变量 -------------------- %
@@ -87,7 +134,6 @@ n_SV = zeros(N,6);
 % 初始化： 定义A、B、循环次数上限 iter、间隙阈值 gap
 gap_cur = zeros(iter,1); % 记录每次得到的gap
 gamma = zeros(iter,1); % 步长gamma
-ls = 1;
 t = 0;
 time = zeros(iter,1); % 记录每次循环所用的时间
 sample_loss = zeros(iter,N); % 记录每一轮中每个样本的损失函数
@@ -109,13 +155,6 @@ fid = cell(N,1);
 fiv = cell(N,1);
 fmj = cell(N,1);
 fsj = cell(N,1);
-% 存放循环中求解得到的y
-Fij = cell(e_frame(N)-1,1);
-Fid = cell(e_frame(N)-1,1);
-Fiv = cell(e_frame(N)-1,1);
-Fit = cell(e_frame(N)-1,1);
-Fsj = cell(e_frame(N),1);
-Fmj = cell(e_frame(N),1);
 
 F = cell(N,1);
 for ii=1:N
@@ -148,41 +187,17 @@ for ii=1:N
 end
 toc;
 
-%% 最耗时的步骤在这里！！！计算所有特征间的核
-kernel_path = [trackpath, '\核训练\kernel_ff_all.mat'];
-if ~exist(kernel_path, 'file')   
-    kernel_ff_all = cell(1,6);
-    for ev=1:6
-        kernel_ff_all{ev} = cell(gt_frame-1);
-    end
-    s1 = 1; % fe1的开始帧
-    e1 = 25; % fe1的结束帧
-    s2 = 1; % fe2的开始帧
-    e2 = 25; % fe2的结束帧
-    for ev=1:6 
-        kernel_ff_all{ev} = ssvm_pre_cal_all_kernel_paper(kernel_ff_all{ev}, gt_frame, ev, kernel_type{ev}, cmd{ev}, [s1 e1 s2 e2]);
-        disp('保存kernel数据...');tic % 保存这么大的数据也很花时间
-        save(kernel_path, 'kernel_ff_all');toc
-    end
-else
-    disp('载入事先计算好的核函数...');
-    load(kernel_path); % 若存在直接载入即可
-end
-
-
+%% 当当前循环次数t小于上限，且gap不符合要求时，进行循环计算，若想增大精度或轮数，修改gap和iter再运行此cell即可
 for ii=1:N
     for ev=1:6
-        % 注意phi_y_i的i是A的索引，而非样本的索引！
         % 初始phi_y设置为标准答案，对应于psi为0，w为全0列
-        phi_y_i{ii,ev} = phi_x_z_star{ii}{ev}; 
-        % 使用函数来给y_i分配处值
-        y_i{ii,ev}{1} = init_assgin_y_i( trackpath, s_frame(ii), e_frame(ii), ev);
+        if ~islinear(ev) % 线性就不赋值了
+            phi_y_i{ii}{ev} = phi_x_z_star{ii}{ev}; 
+        end
     end
 end
 
-%% 当当前循环次数t小于上限，且gap不符合要求时，进行循环计算，若想增大精度或轮数，修改gap和iter再运行此cell即可
-
-while (t < iter && ls >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必须用到）
+while (t < iter && ls*N >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必须用到）
     t = t + 1;
     
     % 记录下每次循环所用的时间
@@ -207,57 +222,65 @@ while (t < iter && ls >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必
     % 计算总样本的alpha和phi_y
     for ii=1:N
         for ev=1:6
-            % 计算各个样本的支持向量个数（可供查看）
-            n_SV(ii,ev) = numel(alpha_i{ii,ev});
+            if ~islinear(ev) % 只针对非线性核
+                phi_y_all{t}{ev} = [ phi_y_all{t}{ev}, phi_y_i{ii}{ev}];
+                % 将向量phi*复制到与phi_y_i相同的长度，再相减得到psi
+                psi_y_i = repmat(phi_x_z_star{ii}{ev},1,size(phi_y_i{ii}{ev},2)) - phi_y_i{ii}{ev};
+                psi_y_all{t}{ev} = [ psi_y_all{t}{ev}, psi_y_i];
+
+                % 计算alpha
+                alpha_all{t}{ev} = [ alpha_all{t}{ev}; alpha_i{ii}{ev}];
+
+                % 计算各个样本的支持向量个数（可供查看）
+                n_SV(ii,ev) = numel(alpha_i{ii}{ev});
+            end
         end
     end
-
-    %% 2. 临时组建目标函数并求解
-    % 目标函数表达式：
-    Predict_OBJ = 0;
-    for ev=1:6
-        % 使用非线性核时这个内积用其他核函数代替
-        % 并且按不同事件可以使用不同核
-        Kernel_ev = kernel_ff_all{ev};
-        y_ev = y_i(:,ev); % 取到该事件的y_i
-        alpha_ev = alpha_i(:,ev); % 取到该事件的alpha_i
-        ind_train = ind;
-        % 1、计算<phi_i*,phi>
-        % 代表Y_i'*K*Y
-        Y_i_star_K_Ytrain{ev} = ssvm_kernel_train_paper([], [], Kernel_ev, ev, N, ind_train, s_frame, e_frame,...
-                                        fij, fit, fid, fiv, fmj, fsj);    
-        % 2、计算<phi_i,phi>
-        % 代表Y_i'*K*Y
-        Y_i_K_Ytrain{ev} = ssvm_kernel_train_paper(y_ev, alpha_ev, Kernel_ev, ev, N, ind_train, s_frame, e_frame,...
-                                        fij, fit, fid, fiv, fmj, fsj);    
-        % 3、合成目标函数
-        Predict_OBJ = Predict_OBJ + Y_i_star_K_Ytrain{ev} - Y_i_K_Ytrain{ev}; % 目标函数表达式需要将所有事件加起来
-    end
     
-    object_function = Predict_OBJ + sum_cost{ind}*lambda*N;
+    %% 2. 临时组建目标函数
+    % 目标函数表达式：
+    % H(y） = sigma[ alpha(i)*K(psi(i), phi(y)) ] + L(y)*lambda*N
+    % 将y拆出来后变为
+    % H(y） = sigma[ alpha(i)*y(i)*K(psi(i), feature(i)) ] + L(y)*lambda*N
+    % ------------------------------------- %
+    K_phi_all = 0; % 非线性核事件目标函数和
+    W_phi_all = 0; % 线性核事件目标函数和
+    for ev=1:6
+        if ~islinear(ev) % 只针对非线性核
+            %% ------------- 非线性核目标函数 ----------------- %
+            % 使用非线性核时这个内积用其他核函数代替
+            % 并且按不同事件可以使用不同核
+            psi = psi_y_all{t}{ev};
+            alpha = alpha_all{t}{ev};
+
+            % 使用info来记录phi2的相关信息（计算kernel是用的feature而不是phi2）
+            info.ind = ind;
+            info.ev = ev;
+            info.s_frame = s_frame(ind); % 训练样本开始帧
+            info.e_frame = e_frame(ind); % 训练样本结束帧
+            % 选择核（目前有2种feature方案，加1的增广和不加的原始）
+            % 因此需要判断下前面载入的是哪个特征
+            K_phi{ev} = ssvm_kernel_train_my(psi, alpha, info, kernel_type{ev}, cmd{ev},...
+                        fij, fit, fid, fiv, fmj, fsj);    
+
+            K_phi_all = K_phi_all + K_phi{ev}/(lambda*N); % 目标函数表达式需要将所有事件加起来
+            % ----------------------------------------------------------- %
+        else
+            %% --------------- 线性核目标函数 ---------------- %
+            % 对于线性来说，只需导出<w,phi>即可
+            W_phi_all = W_phi_all + dot(W{t,ev}, phi_x_z{ind}{ev});
+            % ----------------------------------------------------------- %
+        end
+    end
+    object_function = K_phi_all + W_phi_all + sum_cost{ind};
     sol = solvesdp( F{ind}, -object_function, options );
 
-    %% 3. 输出得到的各个变量的值（即y_i，可认为是支持向量）
+    %% 3. 输出得到的各个变量的值
     if sol.problem == 0      
         for ev=1:6
             phi_x_z_hat{ev} = value(phi_x_z{ind}{ev});
         end
         delta_zstar_zhat = value(sum_cost{ind});
-        
-        % 需要把phi_x_z_hat对应的那个Y也求处来
-        for ff = s_frame(ind):e_frame(ind)-1
-            Fij{ff} = round(value(fij{ind}{ff})) ;
-            Fid{ff} = round(value(fid{ind}{ff})) ;
-            Fiv{ff} = round(value(fiv{ind}{ff})) ;
-            Fit{ff} = round(value(fit{ind}{ff})) ;
-        end
-        for ff = s_frame(ind)+1:e_frame(ind)
-            Fsj{ff} = round(value(fsj{ind}{ff})) ;
-            Fmj{ff} = round(value(fmj{ind}{ff})) ;
-        end
-        Fsj(s_frame(ind)) = []; % 去除第一位，保持和其他事件一样长度（但实际上往前推了一帧）
-        Fmj(s_frame(ind)) = []; % 去除第一位，保持和其他事件一样长度（但实际上往前推了一帧）
-        
     else
         sol.info
         yalmiperror(sol.problem)
@@ -265,47 +288,70 @@ while (t < iter && ls >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必
    
     disp('      更新对偶变量 α...');
     
-    %% 4. 判断s对应的phi之前是否出现过，并更新alpha_i和y_i
+    %% 4. 判断s对应的phi之前是否出现过，并更新alpha
     % 将得到的phi_x_z_hat与之前所有的phi进行比较
     % 实际上，如果2个y不相同，但得到的phi有可能相同，因此通过比较phi来确定y是否一样不严谨
     % 正确的方法应该通过比较y来进行，但只要phi相同，alpha对phi组合之后的结果还是一样，因此无本质区别
     for ev=1:6 % 每个事件分别更新
-        flag_equal = 0;
-        n_phi = size(phi_y_i{ind,ev},2); % 当前样本支持向量的个数
-        for m=1:n_phi
-            if isequal(phi_y_i{ind,ev}(:,m), phi_x_z_hat{ev}) 
-                flag_equal = true;
-                break;
+        %% --------------- 线性核更新方法 ---------------- %
+        if islinear(ev)
+            PSI_zstar_zhat = phi_x_z_star{ind}{ev} - phi_x_z_hat{ev};
+            % 定义惩罚项 lambda λ
+            lambda = 1e-2;
+            Ws = PSI_zstar_zhat/(lambda*N);
+            ls = delta_zstar_zhat/N;  
+            % 计算步长gamma
+            gamma(t) = 2*N/(2*N + t-1);
+            % 更新 wi和Li，将更新后的w保存在 W{t+1,ind}中
+            Wi{t+1,ind}{ev} = (1- gamma(t))*Wi{t,ind}{ev} + gamma(t)*Ws;
+            % 对于此轮没轮到的样本，将其Wi和Li带入下一轮中
+            sample_not_used = setdiff(1:N, ind);
+            for jj=1:numel(sample_not_used)
+                inu = sample_not_used(jj); % 没被用到的样本编号
+                Wi{t+1,inu}{ev} = Wi{t,inu}{ev}; % 直接将其Wi带入下一轮
             end
-        end
-        % ------------------------------------------- %
-        if flag_equal
-            % 如果有重复，则新一轮的phi不变
-            phi_y_i{ind,ev} = phi_y_i{ind,ev};
-            s = m; % 找出s的位置
-            n_phi_new = n_phi; 
-        else
-            phi_y_i{ind,ev} = [ phi_y_i{ind,ev}, phi_x_z_hat{ev}]; % 否则将此轮得到的phi加入新一轮中
-            s = size(phi_y_i{ind,ev},2); % s为新出现的
-            n_phi_new = n_phi + 1; % 更新后的支持向量数目
-            % 同时其对应的y^也要加入到y_i中
-            y_i{ind,ev}{n_phi_new} = assign_y_hat_into_y_i(ev, ind, s_frame, e_frame,Fij,Fit,Fid,Fiv,Fmj,Fsj);
-        end
 
-        alpha_vector = zeros(n_phi_new,1);
-        alpha_vector(1:n_phi) = alpha_i{ind,ev};
-        s_vector = zeros(n_phi_new,1);
-        s_vector(s) = 1; 
-        % 更新alpha_i
-        gamma = 2*N/(2*N + t-1);
-        alpha_i{ind,ev} = (1-gamma)*alpha_vector + s_vector*gamma;
+            % 更新 w和L，将更新后的w保存在 W{t+1,N+1}中
+            W{t+1,ev} = W{t,ev} + Wi{t+1,ind}{ev} - Wi{t,ind}{ev};
+        end
+        
+        %% --------------- 非线性核更新方法 ---------------- %
+        if ~islinear(ev)
+            flag_equal = 0;
+            n_phi = size(phi_y_i{ind}{ev},2); % 当前样本支持向量的个数
+            for m=1:n_phi
+                if isequal(phi_y_i{ind}{ev}(:,m), phi_x_z_hat{ev}) 
+                    flag_equal = true;
+                    break;
+                end
+            end
+            % ------------------------------------------- %
+            if flag_equal
+                % 如果有重复，则新一轮的phi不变
+                phi_y_i{ind}{ev} = phi_y_i{ind}{ev};
+                s = m; % 找出s的位置
+                n_phi_new = n_phi; 
+            else
+                phi_y_i{ind}{ev} = [ phi_y_i{ind}{ev}, phi_x_z_hat{ev}]; % 否则将此轮得到的phi加入新一轮中
+                s = size(phi_y_i{ind}{ev},2); % s为新出现的
+                n_phi_new = n_phi + 1; % 更新后的支持向量数目
+            end
+
+            alpha_vector = zeros(n_phi_new,1);
+            alpha_vector(1:n_phi) = alpha_i{ind}{ev};
+            s_vector = zeros(n_phi_new,1);
+            s_vector(s) = 1; 
+            % 更新alpha_i
+            gamma = 2*N/(2*N + t-1);
+            alpha_i{ind}{ev} = (1-gamma)*alpha_vector + s_vector*gamma;
+        end
+        
     end
 
-    %% 5. 统计损失、时间花费等数据
+    %% 统计损失、时间花费等数据
     % =================================================================== %
     sample_loss(t, ind) = delta_zstar_zhat;
-    ls = sum(sample_loss(t,:));
-    aver_loss(t) = ls; 
+    aver_loss(t) = delta_zstar_zhat; 
     fprintf('      当前样本损失函数△(z*,z^):\t%f\n', aver_loss(t));
     % 记录时间
     time(t) = etime(clock, tstart);
@@ -329,13 +375,14 @@ end
 sample_id = mod(t_best,N); % 根据tbest得到此时的样本编号
 sample_id(sample_id==0) = N;
 
-% 得到最终的y_i和alpha_i，在测试中使用这2个即可
-y_best = y_i;
-alpha_best = alpha_i;
+% 得到最终的A和alpha，在测试中使用这2个即可
+w_best = W{t_best};
+A_best = phi_y_all{t_best};
+alpha_best = alpha_all{t_best};
 loss_best = aver_loss(t_best);  
 
 % 保存最佳w，用于测试其他帧精度
-save([ trackpath, '\结构化学习\SSVM_Best_W_New.mat'], 'y_best','alpha_best','kernel_type','cmd');
+save([ trackpath, '\结构化学习\SSVM_Best_W_New.mat'], 'w_best', 'A_best','alpha_best','kernel_type','cmd');
 
 fprintf('\n\tt_best:\t%d\n', t_best);
 fprintf('\tgap_best:\t%f\n', loss_best);

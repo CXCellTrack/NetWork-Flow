@@ -80,22 +80,22 @@ end
 
 alpha_all = cell(iter,1); % 所有样本alpha的组合
 for tt=1:iter
-    alpha_all{tt} = cell(6,1);
+    alpha_all{tt} = cell(1,6);
 end
 
 phi_y_i = cell(1,N);
 for ii=1:N
-    phi_y_i{ii} = cell(6,1); % phi_y_i为d*m矩阵，单个样本phi的集合
+    phi_y_i{ii} = cell(1,6); % phi_y_i为d*m矩阵，单个样本phi的集合
 end
 
 phi_y_all = cell(iter,1);
 for tt=1:iter
-    phi_y_all{tt} = cell(6,1); % phi_y_all为所有样本phi的集合
+    phi_y_all{tt} = cell(1,6); % phi_y_all为所有样本phi的集合
 end
 
 psi_y_all = cell(iter,1);
 for tt=1:iter
-    psi_y_all{tt} = cell(6,1); % psi_y_all为所有样本psi的集合
+    psi_y_all{tt} = cell(1,6); % psi_y_all为所有样本psi的集合
 end
 
 K_phi = cell(6,1);
@@ -233,15 +233,9 @@ while (t < iter && ls >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必
         info.e_frame = e_frame(ind);
         % 选择核（目前有2种feature方案，加1的增广和不加的原始）
         % 因此需要判断下前面载入的是哪个特征
-        if exist('feature_fij', 'var')
-            K_phi{ev} = ssvm_kernel_train(psi, alpha, info, kernel_type{ev}, cmd{ev},...
-                        fij, fit, fid, fiv, fmj, fsj,...
-                        feature_fij, feature_fit, feature_fid, feature_fiv, feature_fmj, feature_fsj);    
-        elseif exist('feature_fij_p', 'var')
-            K_phi{ev} = ssvm_kernel_train(psi, alpha, info, kernel_type{ev}, cmd{ev},...
-                        fij, fit, fid, fiv, fmj, fsj,...
-                        feature_fij_p, feature_fit_p, feature_fid_p, feature_fiv_p, feature_fmj_p, feature_fsj_p);
-        end
+        K_phi{ev} = ssvm_kernel_train(psi, alpha, info, kernel_type{ev}, cmd{ev},...
+                    fij, fit, fid, fiv, fmj, fsj,...
+                    feature_fij, feature_fit, feature_fid, feature_fiv, feature_fmj, feature_fsj);    
 
         K_phi_all = K_phi_all + K_phi{ev}; % 目标函数表达式需要将所有事件加起来
     end

@@ -1,7 +1,7 @@
-function K = svm_kernel(u, v, kernel_type, cmd)
+function K = svm_kernel(u, v, kernel_type_ev, cmd_ev)
 
 % 读入参数（与svmtrain的表达方法相同）
-cmdcell = strsplit(' ', cmd);
+cmdcell = strsplit(' ', cmd_ev);
 for ii=1:2:numel(cmdcell)
     if strcmp(cmdcell{ii}, '-d')
         degree = str2num( cmdcell{ii+1} );
@@ -18,14 +18,14 @@ if ~exist('gamma', 'var')
     gamma = 1/numel(u);
 end
 
-switch kernel_type
-    case 'linear'
+switch kernel_type_ev(1)
+    case 'l' % 'linear'
         K = dot(u,v);
-    case 'poly'
+    case 'p' % 'poly'
         K = (gamma*u'*v)^degree;
-    case 'rbf' 
+    case 'r' % 'rbf' 
         K = exp(-gamma*norm(u-v)^2);
-    case 'sigmoid'
+    case 's' % 'sigmoid'
         K = tanh(gamma*u'*v);
     otherwise
         error('请打开函数 ssvm_kernel 查看可供选择的核函数！');

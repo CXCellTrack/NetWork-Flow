@@ -31,8 +31,8 @@ if 1
 end
 
 % 定义样本个数 N 和 单个样本中的帧数 frame
-N = 1;
-frame = 5;
+N = 5;
+frame = 13;
 s_frame = zeros(N,1);
 e_frame = zeros(N,1);
 % 目前有gt的帧数，对随机取样有影响
@@ -78,10 +78,7 @@ end
 iter = 50;
 gap = 0.0010; % 按照 O(1/gap) 的收敛速度，应该在百循环左右完成
 
-gap_cur = zeros(iter,1); % 记录每次得到的gap
-
-gamma = zeros(iter,1); % 步长gamma
-
+%% ------------------ 线性w所用到的变量 ---------------------- %
 W = cell(iter,1); % W 存放综合权值w
 Wi = cell(iter,N); % Wi存放样本权值w
 W{1} = w; % 全体样本的W需要设定初值w
@@ -96,6 +93,9 @@ for i=1:N
 end
 ls = 1; % 样本平均损失函数
 
+%% ------------------ 循环中用到的变量 -------------------- %
+gap_cur = zeros(iter,1); % 记录每次得到的gap
+gamma = zeros(iter,1); % 步长gamma
 t = 0;
 time = zeros(iter,1); % 记录每次循环所用的时间
 
@@ -270,8 +270,11 @@ w_for_excel = w_best';
 plot(aver_loss, '-*');
 % 对得到的收敛曲线进行保存
 if 0
-    lossdir = 'C:\Users\Administrator\Desktop\SSVM实验结果\SSVM完整实验记录-9-30\BCFW\';
-    save([lossdir, 'loss_2_40_y.mat'], 'sample_loss');
+    name = 'loss_5_13_y';
+    lossdir = [ trackpath, '\训练结果记录\BCFW\'];
+    mkdir(lossdir);
+    save([lossdir, name, '.mat'], 'sample_loss','aver_loss','w_best','W');
+    saveas(1, [lossdir, name, '.fig']);
 end
 
 

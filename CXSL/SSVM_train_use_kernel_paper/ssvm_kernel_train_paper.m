@@ -1,136 +1,154 @@
-function KKK = ssvm_kernel_train_paper(n_SV, alpha_i, info, kernel_type, cmd,...
-                    fij, fit, fid, fiv, fmj, fsj, s_frame, e_frame,...
-                    feature_fij, feature_fit, feature_fid, feature_fiv, feature_fmj, feature_fsj)    
+function YKY = ssvm_kernel_train_paper(y_ev, alpha_ev, Kernel_ev, ev, N, ind_train, s_frame, e_frame,...
+                                        fij, fit, fid, fiv, fmj, fsj)    
 
+% 设置一个bool变量use_star来指示是y*还是yi                         
+use_star = false;                              
+if isempty(y_ev)&&isempty(alpha_ev)
+    use_star = true;
+end
+    
+[ ~, trackpath ] = getpath( 'training' );
 load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']); % 载入标准答案
-% 在ssvm训练时，phi1是常数（向量），phi2是变量
-% 需要将phi2拆成feature*y，再使用核函数（注意feature是一个矩阵）
-y_star_feature = cell(info.N,1); % y*对应的特征
-y_star = cell(info.N,1); % y*
-
-switch info.ev % 根据事件选择feature和流程变量
+y_star = cell(N,1); % y*
+switch ev % 根据事件选择feature和流程变量
     case 1
-        for ind=1:info.N
-            y_star_feature{ind} = feature_fij(s_frame(ind):e_frame(ind)-1);
-            y_star{ind} = Fij(s_frame(ind):e_frame(ind)-1);
+        if use_star
+            for ind=1:N
+                y_star{ind} = Fij(s_frame(ind):e_frame(ind)-1);
+            end
         end
-        sample_feature = feature_fij(info.s_frame:info.e_frame-1);
-        flowvar = fij{info.ind}(info.s_frame:info.e_frame-1);
+        y_train = fij{ind_train}(s_frame(ind_train):e_frame(ind_train)-1);
     case 2
-        for ind=1:info.N
-            y_star_feature{ind} = feature_fit(s_frame(ind):e_frame(ind)-1);
-            y_star{ind} = Fit(s_frame(ind):e_frame(ind)-1);
+        if use_star
+            for ind=1:N
+                y_star{ind} = Fit(s_frame(ind):e_frame(ind)-1);
+            end
         end
-        sample_feature = feature_fit(info.s_frame:info.e_frame-1);
-        flowvar = fit{info.ind}(info.s_frame:info.e_frame-1);
+        y_train = fit{ind_train}(s_frame(ind_train):e_frame(ind_train)-1);
     case 3
-        for ind=1:info.N
-            y_star_feature{ind} = feature_fid(s_frame(ind):e_frame(ind)-1);
-            y_star{ind} = Fid(s_frame(ind):e_frame(ind)-1);
+        if use_star
+            for ind=1:N
+                y_star{ind} = Fid(s_frame(ind):e_frame(ind)-1);
+            end
         end
-        sample_feature = feature_fid(info.s_frame:info.e_frame-1);
-        flowvar = fid{info.ind}(info.s_frame:info.e_frame-1);
+        y_train = fid{ind_train}(s_frame(ind_train):e_frame(ind_train)-1);
     case 4
-        for ind=1:info.N
-            y_star_feature{ind} = feature_fiv(s_frame(ind):e_frame(ind)-1);
-            y_star{ind} = Fiv(s_frame(ind):e_frame(ind)-1);
+        if use_star
+            for ind=1:N
+                y_star{ind} = Fiv(s_frame(ind):e_frame(ind)-1);
+            end
         end
-        sample_feature = feature_fiv(info.s_frame:info.e_frame-1);
-        flowvar = fiv{info.ind}(info.s_frame:info.e_frame-1);
+        y_train = fiv{ind_train}(s_frame(ind_train):e_frame(ind_train)-1);
     case 5
-        for ind=1:info.N
-            y_star_feature{ind} = feature_fmj(s_frame(ind)+1:e_frame(ind));
-            y_star{ind} = Fmj(s_frame(ind)+1:e_frame(ind));
+        if use_star
+            for ind=1:N
+                y_star{ind} = Fmj(s_frame(ind)+1:e_frame(ind));
+            end
         end
-        sample_feature = feature_fmj(info.s_frame+1:info.e_frame);
-        flowvar = fmj{info.ind}(info.s_frame+1:info.e_frame);
+        y_train = fmj{ind_train}(s_frame(ind_train)+1:e_frame(ind_train)); 
     case 6
-        for ind=1:info.N
-            y_star_feature{ind} = feature_fsj(s_frame(ind)+1:e_frame(ind));
-            y_star{ind} = Fsj(s_frame(ind)+1:e_frame(ind));
+        if use_star
+            for ind=1:N
+                y_star{ind} = Fsj(s_frame(ind)+1:e_frame(ind));
+            end
         end
-        sample_feature = feature_fsj(info.s_frame+1:info.e_frame);
-        flowvar = fsj{info.ind}(info.s_frame+1:info.e_frame);
+        y_train = fsj{ind_train}(s_frame(ind_train)+1:e_frame(ind_train));
+end
+    
+if use_star
+    % 计算ystar*K*y
+    YKY = cal_Ystar_K_Y(y_star, y_train, Kernel_ev, ev, N, ind_train, s_frame, e_frame);
+else
+    % 计算yi*K*y
+    YKY = cal_Yhat_K_Y(y_ev, alpha_ev, y_train, Kernel_ev, ev, N, ind_train, s_frame, e_frame);
 end
 
 
 
-KKK = 0;
-tic;
-for ind=1:info.N
-    disp(['  计算样本',num2str(ind), '...'])
-    % fe1为y*特征，fe2为样本特征
-    fe1 = y_star_feature{ind};
+
+%% 计算 k(phi*,phi) 等同于 Ystar*K*Y
+function Y_star_K_Y = cal_Ystar_K_Y(y_star, y_train, Kernel_ev, ev, N, ind_train, s_frame, e_frame)
+
+Y_star_K_Y = 0;
+for ind=1:N
+%     disp(['  计算样本',num2str(ind), '...'])
     y1 = y_star{ind};
-    fe2 = sample_feature;
-    y2 = flowvar;
+    y2 = y_train;
     
-    frame_result = binvar(numel(fe1),numel(fe2));
-    for ii=1:numel(fe1)
-        for jj=1:numel(fe2) % ii,jj表示是前者第i帧和后者第j帧
-            
-            K_mat = zeros(numel(fe1{ii}),numel(fe2{jj}));
-            for kk=1:numel(fe1{ii})
-                for mm=1:numel(fe2{jj})
-                    K_mat(kk,mm) = svm_kernel(fe1{ii}{kk}, fe2{jj}{mm}, 'linear', ''); %kernel_type, cmd
-                end
+    % ---------------------------------- %
+    s_s = s_frame(ind); % 样本起始帧
+    e_s = e_frame(ind)-1; % 样本结束帧
+    s_t = s_frame(ind_train); % 训练样本起始帧
+    e_t = e_frame(ind_train)-1; % 训练样本结束帧
+    % 根据具体事件调整开始和结束帧
+    thisK = Kernel_ev(s_s:e_s, s_t:e_t); % 前样本长度*训练样本长度
+    for ith=1:size(thisK,1)
+        for jth=1:size(thisK,2)
+            if isempty(thisK{ith,jth})
+                thisK{ith,jth} = Kernel_ev{jth+s_t-1,ith+s_s-1}';% 由于只有右上三角，因此下三角的需要复制得到
             end
-            % 将y1和y2拉直
-            tmpy1 = reshape(y1{ii}, 1, []);
-            tmpy2 = reshape(y2{jj}, [], 1);
-            % 这个相当于 ΣiΣj( yi*yj*k(fei,fej) )
-            frame_result(ii,jj) = tmpy1*K_mat*tmpy2;
         end
     end
+    % ---------------------------------- %
     
+    yKy = binvar(numel(y1), size(thisK,2), 'full');
+    for ii=1:numel(y1)
+        for jj=1:size(thisK,2)
+            tmpy1 = reshape(y1{ii},1,[]);
+            tmpy2 = reshape(y2{jj},[],1);
+            tmpK = thisK{ii,jj};
+            yKy(ii,jj) = tmpy1*tmpK*tmpy2;
+        end
+    end
     % 这个和还要*该样本中支持向量的个数
-    KKK = KKK + n_SV(ind, info.ev)*sum(frame_result(:));
-
+    Y_star_K_Y = Y_star_K_Y + sum(yKy(:));
 end
-toc
-% 这里面包含了5重循环：样本、前者帧、后者帧、前者向量、后者向量，计算非常耗时！
 % 求<f*, f>无需*alpha，因为alpha和一定为1
 
+%% 计算 k(phi^,phi) 等同于 Yi*K*Y
+function Y_i_K_Y = cal_Yhat_K_Y(y_ev, alpha_ev, y_train, Kernel_ev, ev, N, ind_train, s_frame, e_frame)
 
-
-
-
-
-
-
-
-
-
-
-
-% dims = numel(feature{2}{1});
-n_A = size(psi,2);
-K = 0; % 相当于线性时<phi1, phi2>的值
-
-for i=1:numel(sample_feature)
-    if i==1 && (info.ev==5 || info.ev==6)
-        alphaK_mat = [];
-    else
-        K_mat = zeros(n_A, numel(sample_feature{i})); % 存放psi与feature的核函数的结果
-        % psi的每一列与feature的每一列做核运算
-        for jj=1:n_A
-            tmp = cellfun(@(x)svm_kernel(psi(:,jj), x, kernel_type, cmd), sample_feature{i},'un',0);
-            % K_mat为 n_A*n_feature 矩阵
-            K_mat(jj,:) = reshape(cell2mat(tmp), 1, []); 
+Y_i_K_Y = 0;
+for ind=1:N
+    % ---------------------------------- %
+    s_s = s_frame(ind); % 样本起始帧
+    e_s = e_frame(ind)-1; % 样本结束帧
+    s_t = s_frame(ind_train); % 训练样本起始帧
+    e_t = e_frame(ind_train)-1; % 训练样本结束帧
+    % 根据具体事件调整开始和结束帧
+    thisK = Kernel_ev(s_s:e_s, s_t:e_t); % 前样本长度*训练样本长度
+    for ith=1:size(thisK,1)
+        for jth=1:size(thisK,2)
+            if isempty(thisK{ith,jth})
+                thisK{ith,jth} = Kernel_ev{jth+s_t-1,ith+s_s-1}';% 由于只有右上三角，因此下三角的需要复制得到
+            end
         end
-        % 存放aplha筛选完K_mat以后的结果 
-        alphaK_mat  = reshape(alpha'*K_mat, size(flowvar{i}));
     end
-    K = K + sum(sum(alphaK_mat.*flowvar{i}));
-end
-
-% % merge和appear事件第一帧不会发生，要去掉
-% if info.ev==5 || info.ev==6
-%     K = K - sum(sum(K_cell{1}.*flowvar{1}));
-% end % 其他事件最后一轮不会发生（因此没有分配变量空间）此处无需额外去除
+    % ---------------------------------- %
+    y2 = y_train;
     
+    y_sample1 = y_ev{ind}; % 一个样本中所有支持向量
+    alpha_sample1 = alpha_ev{ind}; % 一个样本中所有支持向量对应的alpha
+    
+    for i_in_one=1:numel(y_sample1)
+        y1 = y_sample1{i_in_one}; % 该样本中某一个特定的支持向量
+        alpha1 = alpha_sample1(i_in_one); % 该样本中某一个特定的支持向量对应的alpha
 
-
+        yKy = binvar(numel(y1), size(thisK,2), 'full');
+        for ii=1:numel(y1)
+            for jj=1:size(thisK,2)
+                tmpy1 = reshape(y1{ii},1,[]);
+                tmpy2 = reshape(y2{jj},[],1);
+                tmpK = thisK{ii,jj};
+                yKy(ii,jj) = tmpy1*tmpK*tmpy2;
+            end
+        end
+        % 这个和还要*该样本中支持向量的对应的aplha
+        svK = alpha1*sum(yKy(:));
+    end
+    
+    Y_i_K_Y = Y_i_K_Y + svK;
+end
     
 
 

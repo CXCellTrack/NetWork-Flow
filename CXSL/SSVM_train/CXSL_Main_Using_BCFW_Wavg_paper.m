@@ -23,17 +23,17 @@ clear;close all;
 
 load([ trackpath, '\结构化学习\initial_w_New.mat']);
 % 注意 w 的顺序不能乱
-w = [ wij, wit, wid, wiv, wmj, wsj ]';
+w = [ wij(1:end-1), wit(1:end-1), wid(1:end-1), wiv(1:end-1), wmj(1:end-1), wsj(1:end-1) ]';
 clear wij wit wid wiv wmj wsj;
 % 也可以选择随机的w或全0的w
-if 1
+if 0
     dim = numel(w)-6; % initial_w是增广的
     w = zeros(dim, 1);
 end
 
 % 定义样本个数 N 和 单个样本中的帧数 frame
 N = 5;
-frame = 5;
+frame = 13;
 s_frame = zeros(N,1);
 e_frame = zeros(N,1);
 % 目前有gt的帧数，对随机取样有影响
@@ -73,7 +73,7 @@ end
 % 全部变量最终都被保存下来，局部变量无需保存
 
 % 初始化： 定义A、B、循环次数上限 iter、间隙阈值 gap
-iter = 50;
+iter = 200;
 gap = 0.0010; % 按照 O(1/gap) 的收敛速度，应该在百循环左右完成
 gap_cur = zeros(iter,1); % 记录每次得到的gap
 gamma = zeros(iter,1); % 步长gamma
@@ -209,10 +209,15 @@ while t < iter && ls*N >= gap
     Ws = sum_U/(lambda*N);
     ls = sum_delta/N;
     % 计算gap，gap的值随样本、lambda都会变化，无法确定下来，因此还是用loss做gap比较合适
-    gap_cur(t+1) = lambda*(Wi{t,ind}- Ws)'*W{t}- Li(t,ind)+ ls;
+    gap_cur(t) = lambda*(Wi{t,ind}- Ws)'*W{t}- Li(t,ind)+ ls;
+    if gap_cur(t)>1
+        gap_cur(t) = 1;
+    elseif gap_cur(t)<0
+        gap_cur(t) = 0;
+    end
     % 计算步长gamma
-%     gamma(t) = gap_cur(t+1)/(lambda*norm(Wi{t,ind}- Ws)^2);
-    gamma(t) = 2*N/(2*N + t-1);
+    gamma(t) = gap_cur(t)/(lambda*norm(Wi{t,ind}- Ws)^2);
+%     gamma(t) = 2*N/(2*N + t-1);
 
     % 更新 wi和Li，将更新后的w保存在 W{t+1,ind}中
     % 对于Wi来说，由于上一次不一定选得是i，因此Wi{t,ind}可能为空的，会导致更新的时候似乎有问题？
@@ -275,8 +280,9 @@ w_for_excel = w_best';
 plot(aver_loss, '-*');
 % 对得到的收敛曲线进行保存
 if 0
-    name = 'loss_15_10_y';
-    lossdir = [ trackpath, '\训练结果记录\BCFWavg_New\'];
+    name = 'loss_5_13_y';
+    lossdir = [ trackpath, '\训练结果记录\BCFWavg\'];
+    mkdir(lossdir);
     save([lossdir, name, '.mat'], 'aver_loss','sample_loss','w_best','Wavg');
     saveas(1, [lossdir, name, '.fig']);
 end

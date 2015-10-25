@@ -21,7 +21,7 @@ end
 % 指定测试帧的范围
 segdir = dir([ segpath, '\*.tif']);
 s_frame = 1;
-e_frame = 25 %numel(segdir);
+e_frame = numel(segdir);
 % 指定是否存在GT，如果存在，则计算精度等指标，否则不需要算
 exist_GT = 1;
 disp(['  计算 ',num2str(s_frame), '—',num2str(e_frame), ' 帧的目标函数和约束条件...']);
@@ -116,7 +116,7 @@ end
 
 % 保存得到的流量变量结果到 track_data 中，供后续画图用（通常不要保存！）
 if 0
-    txtpath = [trackpath, '\测试结果记录\BCFW_kernel\1_65_y.txt'];
+    txtpath = [trackpath, '\测试结果记录\BCFWavg\5_13_y.txt'];
     file = fopen(txtpath, 'w'); fclose(file);
     save(strrep(txtpath,'txt','mat'), 'PRF','COUNT','Fij','Fit','Fid','Fiv','Fmj','Fsj'); % 注意修改mat名称
     
