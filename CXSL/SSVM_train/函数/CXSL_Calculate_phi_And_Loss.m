@@ -1,4 +1,4 @@
-function [ fij fit fid fiv fmj fsj fai_x_z cost_for_train ] = CXSL_Calculate_Fai_And_Loss( s_frame, e_frame )
+function [ fij fit fid fiv fmj fsj fai_x_z cost_for_train ] = CXSL_Calculate_phi_And_Loss( w, s_frame, e_frame )
 
 %
 % 在给定 w 的情况下，生成变量矩阵和目标函数
@@ -14,11 +14,20 @@ dataset = 'training'; % 这个函数也只在训练中使用
 
 load([ trackpath, '\Pair\Pre_data_New.mat'], 'n','conflict_pair_last_xy','conflict_pair_next_xy','conflict_fij');
 % 载入特征
-load([ trackpath, '\结构化学习\Feature_New.mat']);
+if numel(w)==40
+    load([ trackpath, '\结构化学习\Feature_Plus_New.mat']);
+    feature_fij = feature_fij_p;
+    feature_fit = feature_fit_p;
+    feature_fid = feature_fid_p;
+    feature_fiv = feature_fiv_p;
+    feature_fmj = feature_fmj_p;
+    feature_fsj = feature_fsj_p;
+else
+    load([ trackpath, '\结构化学习\Feature_New.mat']);
+end
 % 载入标准答案GT
 load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
 
-% 步骤1已被注释
 %% 2.构建变量矩阵
 fij = cell(e_frame-1,1);
 fid = cell(e_frame-1,1);
@@ -231,6 +240,9 @@ event_FN = sum(Tcount) - event_TP; % 细胞事件的FN（测试没发生但实际发生了）
 fd_FN = fd_Tcount - fd_TP; % 虚景的FN（测试不为虚但实际为虚）
 % cost_for_train = (event_FN + fd_FN)/ sum(Tcount); % 类似recall的计算（仅用于SSVM训练时的cost）
 cost_for_train = event_FN/ sum(Tcount);
+
+% move_divide_FN = TP.fij + TP.fid*50;
+% cost_for_train = 1 - move_divide_FN/ (Tcount(1)+Tcount(3)*50);
 
 end
 

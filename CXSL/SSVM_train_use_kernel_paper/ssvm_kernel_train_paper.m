@@ -94,7 +94,7 @@ for ind=1:N
     yKy = binvar(numel(y1), size(thisK,2), 'full');
     for ii=1:numel(y1)
         for jj=1:size(thisK,2)
-            tmpy1 = reshape(y1{ii},1,[]);
+            tmpy1 = reshape(y1{ii},[],1)'; % 必须都是按列拉直
             tmpy2 = reshape(y2{jj},[],1);
             tmpK = thisK{ii,jj};
             yKy(ii,jj) = tmpy1*tmpK*tmpy2;
@@ -129,6 +129,7 @@ for ind=1:N
     
     y_sample1 = y_ev{ind}; % 一个样本中所有支持向量
     alpha_sample1 = alpha_ev{ind}; % 一个样本中所有支持向量对应的alpha
+    svK = 0;
     
     for i_in_one=1:numel(y_sample1)
         y1 = y_sample1{i_in_one}; % 该样本中某一个特定的支持向量
@@ -137,14 +138,14 @@ for ind=1:N
         yKy = binvar(numel(y1), size(thisK,2), 'full');
         for ii=1:numel(y1)
             for jj=1:size(thisK,2)
-                tmpy1 = reshape(y1{ii},1,[]);
+                tmpy1 = reshape(y1{ii},[],1)'; % 必须都是按列拉直
                 tmpy2 = reshape(y2{jj},[],1);
                 tmpK = thisK{ii,jj};
                 yKy(ii,jj) = tmpy1*tmpK*tmpy2;
             end
         end
         % 这个和还要*该样本中支持向量的对应的aplha
-        svK = alpha1*sum(yKy(:));
+        svK = svK + alpha1*sum(yKy(:));
     end
     
     Y_i_K_Y = Y_i_K_Y + svK;

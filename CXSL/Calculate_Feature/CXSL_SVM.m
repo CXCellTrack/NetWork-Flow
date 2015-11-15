@@ -1,4 +1,4 @@
-function  model = CXSL_SVM( positive_sample, negative_sample, feature, n_cut, num_n_p, option)
+function  [ model bestc bestg ] = CXSL_SVM( positive_sample, negative_sample, feature, n_cut, num_n_p, option)
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 %
@@ -120,7 +120,6 @@ test_feature = [ p_feature(ind_p_test,:); n_feature(ind_n_test,:) ];
 
 elseif strcmp(option, 'rand')
 %% 3.普通随机抽样法
-
 % 打乱正负样本的顺序
 rand_indp = randperm(num_p_s);
 rand_indn = randperm(num_n_s);
@@ -128,9 +127,9 @@ rand_indn = randperm(num_n_s);
 ind_train_p = rand_indp(1:num_train_p);
 ind_train_n = rand_indn(1:num_train_n);
 % 正样本中剩下的的全部作为测试正样本
-ind_test_p = setdiff(1:num_p_s, ind_train_p);
+ind_test_p = mysetdiff(1:num_p_s, ind_train_p);
 % 负样本中剩下的的生成一定数量的测试负样本
-all_test_n = setdiff(1:num_n_s, ind_train_n);
+all_test_n = mysetdiff(1:num_n_s, ind_train_n);
 ind_test_n = all_test_n(1:num_test_n);
 
 % 制造正负训练样本的特征矩阵
@@ -165,7 +164,15 @@ else
 end
 %% 开始训练SVM并测试
 disp('start svm training...');
-model = svmtrain(train_label, train_feature, '-t 0 -c 10^0 '); % 加 -b 1 可得到概率输出
+if 0
+    % 寻找最优的cg
+    [~, bestc, bestg] = SVMcgForClass(train_label,train_feature,-10,10,-10,10,3,1,1);
+else
+    bestc = 1;
+    bestg = 1;
+end
+
+model = svmtrain(train_label, train_feature, ['-t 0 -c ',num2str(bestc),' -g ',num2str(bestg)]); % 加 -b 1 可得到概率输出
 disp('start svm predicting...');
 [ predicted_label ] = svmpredict(test_label, test_feature, model); % 加 -b 1 可得到概率输出
 

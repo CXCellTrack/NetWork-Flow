@@ -21,6 +21,8 @@ function kernel_ff_all_ev = ssvm_pre_cal_all_kernel_paper(kernel_ff_all_ev, gt_f
                 
 %% 载入预计算数据
 [ ~, trackpath ] = getpath( 'training' );
+% load([ trackpath, '\Pair\Pre_data_New.mat']); 
+load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']); % 载入标准答案
 load([ trackpath, '\结构化学习\Feature_New.mat']); % 载入特征
 
 sample_feature = cell(1,gt_frame); % 所有样本对应的特征
@@ -64,19 +66,29 @@ if any([e1,e2]>gt_frame)
     error('结束帧超过最大帧了！');
 end
 
-for ii=s1:e1
-    for jj=s2:e2 % ii,jj表示是前者第i帧和后者第j帧
+for ii=s1:e1-1
+    for jj=s2:e2-1 % ii,jj表示是前者第i帧和后者第j帧
         if jj<ii
             continue; % 只计算右上三角阵！
         end
 
         disp(['    计算第',num2str(ii), '帧与第',num2str(jj),'帧的核函数...']);
         K_mat = zeros(numel(fe1{ii}),numel(fe2{jj}));
-        for kk=1:numel(fe1{ii}) % 前者ii帧第kk个椭圆
-            for mm=1:numel(fe2{jj}) % 后者jj者第mm个椭圆
-                % 调用svm的核算法进行求解
-                K_mat(kk,mm) = svm_kernel(fe1{ii}{kk}, fe2{jj}{mm}, kernel_type_ev, cmd_ev);% kernel_type_ev, cmd_ev
+        
+        for hh=1:size(fe1{ii},1) % 按行来
+            if ev==3
+                if sum(Fid{ii}(hh,:))==0
+                    continue; % 这一行y*对应的是0，则跳过
+                end
+                for ss=1:6 % 按列算
+                    kk = (ss-1)*size(fe1{ii},1)+hh; % 按列拉直后的椭圆序号
+                    for mm=1:numel(fe2{jj}) % 后者jj者第mm个椭圆
+                        % 调用svm的核算法进行求解
+                        K_mat(kk,mm) = svm_kernel(fe1{ii}{kk}, fe2{jj}{mm}, kernel_type_ev, cmd_ev);% kernel_type_ev, cmd_ev
+                    end
+                end
             end
+
         end
 
         kernel_ff_all_ev{ii,jj} = K_mat;

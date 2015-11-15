@@ -9,7 +9,7 @@
 clear;close all;
 
 %% Ö¸¶¨ÔÚÄÄ¸öÊı¾İ¼¯ÉÏ½øĞĞ¼ÆËã£¨training or competition£©
-if 0
+if 1
     dataset = 'competition';
     disp('<Ñ¡¶¨²âÊÔ¼¯>');
 else
@@ -21,7 +21,7 @@ end
 % Ö¸¶¨²âÊÔÖ¡µÄ·¶Î§
 segdir = dir([ segpath, '\*.tif']);
 s_frame = 1;
-e_frame = 65%numel(segdir);
+e_frame = numel(segdir);
 % Ö¸¶¨ÊÇ·ñ´æÔÚGT£¬Èç¹û´æÔÚ£¬Ôò¼ÆËã¾«¶ÈµÈÖ¸±ê£¬·ñÔò²»ĞèÒªËã
 exist_GT = 1;
 disp(['  ¼ÆËã ',num2str(s_frame), '¡ª',num2str(e_frame), ' Ö¡µÄÄ¿±êº¯ÊıºÍÔ¼ÊøÌõ¼ş...']);
@@ -34,40 +34,45 @@ disp(['  ¼ÆËã ',num2str(s_frame), '¡ª',num2str(e_frame), ' Ö¡µÄÄ¿±êº¯ÊıºÍÔ¼ÊøÌõ¼
 disp('·ÖÅäÁ÷³Ì±äÁ¿...');tic
 [ fij fit fid fiv fmj fsj ] = CXSL_Assign_FlowVar( dataset, s_frame, e_frame );
 toc;disp('¼ÆËãÔ¼ÊøÌõ¼ş...');
-% ´Ë´¦µÄtrue/false¾ö¶¨ÊÇ·ñ¼ÓÈë¿ÉÑ¡Ô¼Êø£¨ÒªÓëÑµÁ·Ê±µÄÑ¡ÔñÒ»ÖÂ£©
-[ F ] = CXSL_Calculate_Constraint_New_Conflict( dataset, true, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
+% ´Ë´¦µÄtrue/false¾ö¶¨ÊÇ·ñ¼ÓÈë¿ÉÑ¡Ô¼Êø£¨ÒªÓëÑµÁ·Ê±µÄÑ¡ÔñÒ»ÖÂ)
+use_op_cons_test = [3 5];
+[ F ] = CXSL_Calculate_Constraint_New_Conflict( dataset, use_op_cons_test, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
 % ¼ÆËãÄ¿±êº¯Êı£¨ĞèÒªÔØÈëÖ®Ç°¼ÆËãºÃµÄÌØÕ÷£©
 
 %% ×é½¨Ä¿±êº¯Êı
 [ ~, traintrackpath ] = getpath( 'training' );
 if 1
-    if 1
-        disp('  ÔØÈëÉÏÒ»´Î SSVM ÑµÁ·µÃµ½µÄAºÍaplha...');
+    if 0
+        disp('  ÔØÈëÖ®Ç° SSVM ÑµÁ·µÃµ½µÄ×î¼Ñ w...');
         load([ traintrackpath, '\½á¹¹»¯Ñ§Ï°\SSVM_Best_W_New.mat']);
-    else
-        disp('  ÔØÈëÖ®Ç° SSVM ÑµÁ·±£´æµÄAºÍalpha...'); 
-        name = 'loss_1_65_y';
-        lossdir = [ trackpath, '\ÑµÁ·½á¹û¼ÇÂ¼\BCFW_kernel\'];
-        load([lossdir, name, '.mat']);
+    else % ÏëÒª¸´ÏÖ excel ÖĞ¼ÇÔØµÄÒÔÇ°µÄÊµÑé½á¹û£¬Ö»ĞèÒªÊÖ¶¯ÌîĞ´ w_best ¼´¿É
+        disp('  ÔØÈëÊÖ¶¯ÌîĞ´µÄw...');
+        thisfile = 'BCFWavg_my\initwp\loss_6_10_cons35_cost1_initwp_line.mat';
+        load([ traintrackpath, '\ÑµÁ·½á¹û¼ÇÂ¼\', thisfile ], 'w_best','use_op_cons');
+        if ~isequal(use_op_cons, use_op_cons_test)
+            error('²âÊÔËùÓÃµÄ¿ÉÑ¡Ô¼ÊøºÍÑµÁ·²»Ò»ÖÂ£¡');
+        end
     end
 else  
-    disp('  ÔØÈë localSVM ÑµÁ·µÃµ½µÄaplhaºÍÖ§³ÖÏòÁ¿...');
+    disp('  ÔØÈëlocal SVM ÑµÁ·³öÀ´µÄ¸÷ÊÂ¼şw...');
+    % Ò²¿ÉÒÔÊ¹ÓÃµ¥¶ÀsvmÑµÁ·³öÀ´µÄ¸÷ÊÂ¼şw£¬ÔÚ½øĞĞ×éºÏ
+    load([ traintrackpath, '\½á¹¹»¯Ñ§Ï°\initial_w_New.mat']);
+    % ¼ÓÆ«ÖÃ
+    w_best = [ wij,bij, wit,bit, wid,bid wiv,biv wmj,bmj wsj,bsj ]';
 end
 
 disp('×é½¨Ä¿±êº¯Êı...');tic
-object_function = CXSL_Calculate_Obj_kernel( dataset, s_frame, e_frame,...
-    A_best, alpha_best, kernel_type, cmd,...
-    fij, fit, fid, fiv, fmj, fsj );
+object_function = CXSL_Calculate_Obj_New( dataset, w_best, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj );
 toc
 
 %% ×îÖÕÇó½â
 disp('  ¿ªÊ¼Çó½âILP...');
-clearvars -except F object_function s_frame e_frame  fij fid fiv fit fsj fmj loss dataset count count_F_false exist_GT trackpath;
+clearvars -except F object_function s_frame e_frame  fij fid fiv fit fsj fmj loss dataset count count_F_false exist_GT trackpath thisfile;
 % ×¢Òâ£¬Ô­ÏÈ²ÉÓÃÏÈËã³ö fai(x,z) = <feature,z>£¬ÔÚ¼ÆËã obj = <w,fai(x,z)>;
 % ÏÖÔÚ²ÉÓÃÏÈ¼ÆËã <w,feature>£¬ÔÚ¼ÆËã obj = <w,feature>*z£¬ËÙ¶ÈµÃµ½ÁËÃ÷ÏÔÌáÉı
 % µ«ÕâÊÇÕë¶ÔÓÚÒ»´Î¼ÆËã¶øÑÔ£¬Èç¹ûÔÚÑ­»·ÖĞÃ¿´Î¶¼ÒªÕâÃ´¼ÆËãÄ¿±êº¯Êı£¬ËÙ¶È»¹ÊÇÃ»ÓĞÔ­·½·¨¿ì 2015.6.24
-% options = sdpsettings('verbose',0,'solver','gurobi');
-options = sdpsettings('verbose',0,'solver','cplex','saveduals',0);
+
+options = sdpsettings('verbose',0,'solver','gurobi');
 sol = solvesdp( F, -object_function, options )
 
 Fij = cell(e_frame-1,1);
@@ -95,7 +100,7 @@ end
 COST = value(object_function);
 fprintf('\tcost:\t%.4f\n\n', COST);
 
-% µ÷ÓÃº¯Êı¼ÆËã¾«¶È£¨¼ÙËµ¾«¶È£©
+%% µ÷ÓÃº¯Êı¼ÆËã¾«¶È£¨¼ÙËµ¾«¶È£©
 [ ~, PRF, COUNT ] = CX_Calculate_Loss( dataset, exist_GT, s_frame, e_frame, Fij, Fit, Fid, Fiv, Fmj, Fsj );
 
 if isa(PRF, 'struct')
@@ -112,14 +117,15 @@ if isa(PRF, 'struct')
 end
 % ------------------------------------------------------ %
 
-
-% ±£´æµÃµ½µÄÁ÷Á¿±äÁ¿½á¹ûµ½ track_data ÖĞ£¬¹©ºóĞø»­Í¼ÓÃ£¨Í¨³£²»Òª±£´æ£¡£©
+%% ±£´æµÃµ½µÄÁ÷Á¿±äÁ¿½á¹ûµ½ track_data ÖĞ£¬¹©ºóĞø»­Í¼ÓÃ£¨Í¨³£²»Òª±£´æ£¡£©
 if 0
-    txtpath = [trackpath, '\²âÊÔ½á¹û¼ÇÂ¼\BCFW_kernel\1_65_y.txt'];
-    file = fopen(txtpath, 'w'); fclose(file);
-    save(strrep(txtpath,'txt','mat'), 'PRF','COUNT','Fij','Fit','Fid','Fiv','Fmj','Fsj'); % ×¢ÒâĞŞ¸ÄmatÃû³Æ
-    
-%     save([ trackpath, '\½á¹¹»¯Ñ§Ï°\Tracking_Data.mat'], 'Fij','Fid','Fiv','Fit','Fsj','Fmj');
+    if exist('thisfile', 'var')
+        matpath = [trackpath, '\²âÊÔ½á¹û¼ÇÂ¼\',strrep(thisfile, 'loss_', '')];
+    else
+        matpath = [trackpath, '\²âÊÔ½á¹û¼ÇÂ¼\BCFWavg_my\10_6_y.mat'];
+    end
+    save(matpath, 'PRF','COUNT','Fij','Fit','Fid','Fiv','Fmj','Fsj'); % ×¢ÒâĞŞ¸ÄmatÃû³Æ
+    file = fopen(strrep(matpath,'mat','txt'), 'w'); fclose(file);
 end
 
 

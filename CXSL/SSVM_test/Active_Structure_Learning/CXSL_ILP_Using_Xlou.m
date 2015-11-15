@@ -20,7 +20,7 @@ if 1
     else % 想要复现 excel 中记载的以前的实验结果，只需要手动填写 w_best 即可
         disp('  载入手动填写的w...');
         % 注意！只能用2帧长度样本的训练结果来测试这个！
-        w_best = [-5.170345124	0.574560068	0.436206287	0.258141338	-0.172298816	0.080163188	0.024041306	0.089464995	-4.252191081	-0.274891168	-1.052420984	-0.330896797	-0.36331268	1.32905016	-1.735174617	3.023747434	1.17704628	0.011955574	-0.463793701	-1.254599365	0.162414663	0.181850867	1.291465386	-3.83609205	1.852794508	0.903066428	-0.199206694	-0.390306403	-1.321985405	0.608154159	0.347836237	1.289479594	0.221317699	-0.439501761	-1.135850144	-0.008892086	-1.223631805	-0.153622387	0.195378585	-2.347423748]';
+        
     end
 else  
     disp('  载入单独 SVM 训练出来的各事件w，再进行组合...');
@@ -47,16 +47,11 @@ for i=1:frame-1
     [ Fij, Fit, Fid, Fiv, Fsj, Fmj ] = ASLearning( w_best, s_frame, e_frame, Fij, Fit, Fid, Fiv, Fsj, Fmj );
 end
 
-fij = Fij;
-fid = Fid;
-fiv = Fiv;
-fit = Fit;
-fsj = Fsj;
-fmj = Fmj;
+
 % 调用函数计算精度（假说精度）
 s_frame = 1;
 e_frame = frame;
-[ ~, PRF, COUNT ] = CX_Calculate_Loss( dataset, exist_GT, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj );
+[ ~, PRF, COUNT ] = CX_Calculate_Loss( dataset, exist_GT, s_frame, e_frame, Fij, Fit, Fid, Fiv, Fmj, Fsj );
 
 if isa(PRF, 'struct')
     
@@ -75,9 +70,9 @@ end
 
 % 保存得到的流量变量结果到 track_data 中，供后续画图用（通常不要保存！）
 if 0
-    txtpath = [ trackpath, '\测试结果记录\BCFWavg_New\32_2_y.txt'];
-    fid = fopen(txtpath, 'w'); fclose(fid);
-    save(strrep(txtpath,'txt','mat'), 'PRF','COUNT','fij','fid','fiv','fit','fsj','fmj'); % 注意修改mat名称
+    txtpath = [ trackpath, '\测试结果记录\BCFWavg_my\40_2_cons1235.txt'];
+    fidin = fopen(txtpath, 'w'); fclose(fidin);
+    save(strrep(txtpath,'txt','mat'), 'PRF','COUNT','Fij','Fid','Fiv','Fit','Fsj','Fmj'); % 注意修改mat名称
     
 %     save([ trackpath, '\结构化学习\Tracking_Data.mat'], 'Fij','Fid','Fiv','Fit','Fsj','Fmj');
 end

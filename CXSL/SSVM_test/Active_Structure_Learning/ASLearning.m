@@ -24,7 +24,7 @@ disp(['  ¼ÆËã ',num2str(s_frame), '¡ª',num2str(e_frame), ' Ö¡µÄÄ¿±êº¯ÊıºÍÔ¼ÊøÌõ¼
 
 [ fij fit fid fiv fmj fsj ] = CXSL_Assign_FlowVar( dataset, s_frame, e_frame );
 % ´Ë´¦µÄtrue/false¾ö¶¨ÊÇ·ñ¼ÓÈë¿ÉÑ¡Ô¼Êø£¨ÒªÓëÑµÁ·Ê±µÄÑ¡ÔñÒ»ÖÂ£©
-[ F ] = CXSL_Calculate_Constraint_New_Conflict( dataset, true, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
+[ F ] = CXSL_Calculate_Constraint_New_Conflict( dataset, [1 2 3 5], s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
 % ¼ÆËãÄ¿±êº¯Êı£¨ĞèÒªÔØÈëÖ®Ç°¼ÆËãºÃµÄÌØÕ÷£©
 object_function = CXSL_Calculate_Obj_New( dataset, w_best, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj );
 
@@ -37,7 +37,7 @@ disp('  ¿ªÊ¼Çó½âILP...');
 % ÏÖÔÚ²ÉÓÃÏÈ¼ÆËã <w,feature>£¬ÔÚ¼ÆËã obj = <w,feature>*z£¬ËÙ¶ÈµÃµ½ÁËÃ÷ÏÔÌáÉı
 % µ«ÕâÊÇÕë¶ÔÓÚÒ»´Î¼ÆËã¶øÑÔ£¬Èç¹ûÔÚÑ­»·ÖĞÃ¿´Î¶¼ÒªÕâÃ´¼ÆËãÄ¿±êº¯Êı£¬ËÙ¶È»¹ÊÇÃ»ÓĞÔ­·½·¨¿ì 2015.6.24
 
-options = sdpsettings('verbose',0,'solver','cplex','saveduals',0);
+options = sdpsettings('verbose',0,'solver','gurobi');
 sol = solvesdp( F, -object_function, options );
 
 if sol.problem == 0

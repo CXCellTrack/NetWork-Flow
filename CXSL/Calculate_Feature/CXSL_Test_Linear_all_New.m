@@ -58,12 +58,16 @@ end
 num_p_s = num_p_s -1; % 正样本数目
 num_n_s = num_n_s -1; % 负样本数目
 
-% 输入到SVM分类器中验证是否线性可分
-% 选择 'margin' 模式的时候2/3是失效的，训练样本数目就是边界点数
-model = CXSL_SVM( positive_sample, negative_sample, feature_fid, 2/3, 3, 'rand');% 倒数第二位表示测试中负样本数目是正样本的多少倍
-
-coef = repmat( model.sv_coef, 1, size(model.SVs, 2) ); 
-wid = full([ sum( coef.* model.SVs ), -model.rho ]);
+% 使用系统自带的svmtrain进行分类（速度慢，分的还差，不用了！）
+[ wid bid ] = CXSL_SVM_new( positive_sample, negative_sample, feature_fid, 1/3);
+% bid = bid + 1;
+% % 输入到SVM分类器中验证是否线性可分
+% % 选择 'margin' 模式的时候2/3是失效的，训练样本数目就是边界点数
+% [ model bestc bestg ] = CXSL_SVM( positive_sample, negative_sample, feature_fid, 2/3, 3, 'rand');% 倒数第二位表示测试中负样本数目是正样本的多少倍
+% 
+% coef = repmat( model.sv_coef, 1, size(model.SVs, 2) ); 
+% bid = -model.rho;
+% wid = full( sum(coef.* model.SVs) ); % 
 
 % 使用ssvm训练的w来测试，看是否线性可分，从而决定是否采用核函数 2015.10.13
 if 0
@@ -100,11 +104,7 @@ end
 num_p_s = num_p_s -1; % 正样本数目
 num_n_s = num_n_s -1; % 负样本数目
     
-% 输入到SVM分类器中验证是否线性可分
-model = CXSL_SVM( positive_sample, negative_sample, feature_fij, 2/3, 1, 'rand');% 倒数第二位表示测试中负样本数目是正样本的多少倍
-
-coef = repmat( model.sv_coef, 1, size(model.SVs, 2) ); 
-wij = full([ sum( coef.* model.SVs ), -model.rho ]);
+[ wij bij ] = CXSL_SVM_new( positive_sample, negative_sample, feature_fij, 1/3);
 %
 % 速度极慢，以下是运行结果
 % ===== Confusion Matrix =====
@@ -156,11 +156,8 @@ end
 num_p_s = num_p_s -1; % 正样本数目
 num_n_s = num_n_s -1; % 负样本数目
 
-model = CXSL_SVM( positive_sample, negative_sample, feature_fsj, 2/3, 2, 'rand');
-
-coef = repmat( model.sv_coef, 1, size(model.SVs, 2) ); 
-wsj = full([ sum( coef.* model.SVs ), -model.rho ]);
-
+[ wsj bsj ] = CXSL_SVM_new( positive_sample, negative_sample, feature_fsj, 1/3);
+% bsj = bsj + 1;
 % 使用ssvm训练的w来测试，看是否线性可分，从而决定是否采用核函数 2015.10.13
 if 0
     test_linear_using_ssvm_result( 'fsj', positive_sample, negative_sample );
@@ -201,11 +198,8 @@ end
 num_p_s = num_p_s -1; % 正样本数目
 num_n_s = num_n_s -1; % 负样本数目
 
-model = CXSL_SVM( positive_sample, negative_sample, feature_fit, 2/3, 2, 'rand');
-
-coef = repmat( model.sv_coef, 1, size(model.SVs, 2) ); 
-wit = full([ sum( coef.* model.SVs ), -model.rho ]);
-
+[ wit bit ] = CXSL_SVM_new( positive_sample, negative_sample, feature_fit, 1/3);
+% bit = bit + 1;
 % 使用ssvm训练的w来测试，看是否线性可分，从而决定是否采用核函数 2015.10.13
 if 0
     test_linear_using_ssvm_result( 'fit', positive_sample, negative_sample );
@@ -250,14 +244,11 @@ end
 num_p_s = num_p_s -1; % 正样本数目
 num_n_s = num_n_s -1; % 负样本数目
 
-% 输入到SVM分类器中验证是否线性可分
-% 选择 'margin' 模式的时候2/3是失效的，训练样本数目就是边界点数
-model = CXSL_SVM( positive_sample, negative_sample, feature_fmj, 2/3, 10, 'rand');% 倒数第二位表示测试中负样本数目是正样本的多少倍
-
-coef = repmat( model.sv_coef, 1, size(model.SVs, 2) ); 
-wmj = full([ sum( coef.* model.SVs ), -model.rho ]);
+[ wmj bmj ] = CXSL_SVM_new( positive_sample, negative_sample, feature_fmj, 1/3);
+% bmj = bmj + 1;
 if wmj==0 % 若没有该类型样本，则w会变为0，需要另外设置
-    wmj = [zeros(size(feature_fmj{2}{1}))', 0];
+    wmj = [zeros(size(feature_fmj{2}{1}))'];
+    bmj = 0;
 end
 
 % 使用ssvm训练的w来测试，看是否线性可分，从而决定是否采用核函数 2015.10.13
@@ -304,14 +295,11 @@ end
 num_p_s = num_p_s -1; % 正样本数目
 num_n_s = num_n_s -1; % 负样本数目
 
-% 输入到SVM分类器中验证是否线性可分
-% 选择 'margin' 模式的时候2/3是失效的，训练样本数目就是边界点数
-model = CXSL_SVM( positive_sample, negative_sample, feature_fiv, 1/2, 10, 'rand');% 倒数第二位表示测试中负样本数目是正样本的多少倍
-
-coef = repmat( model.sv_coef, 1, size(model.SVs, 2) ); 
-wiv = full([ sum( coef.* model.SVs ), -model.rho ]);
+[ wiv biv ] = CXSL_SVM_new( positive_sample, negative_sample, feature_fiv, 1/3);
+% biv = biv + 1
 if wiv==0 % 若没有该类型样本，则w会变为0，需要另外设置
-    wiv = [zeros(size(feature_fiv{2}{1}))', 0];
+    wiv = [zeros(size(feature_fiv{2}{1}))'];
+    biv = 0;
 end
 % 使用ssvm训练的w来测试，看是否线性可分，从而决定是否采用核函数 2015.10.13
 if 0
@@ -326,8 +314,10 @@ num_p_s = 1;
 num_n_s = 1;
 
 %% 保存各细胞事件的w
-if 1
-    save([ trackpath, '\结构化学习\initial_w_New.mat'], 'wij', 'wit', 'wid', 'wiv', 'wmj', 'wsj');
+if 0
+    save([ trackpath, '\结构化学习\initial_w_New.mat'],...
+        'wij', 'wit', 'wid', 'wiv', 'wmj', 'wsj',...
+        'bij', 'bit', 'bid', 'biv', 'bmj', 'bsj');
 end
 
 

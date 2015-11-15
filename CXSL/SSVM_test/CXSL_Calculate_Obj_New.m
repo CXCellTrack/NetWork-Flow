@@ -9,39 +9,41 @@ function object_function = CXSL_Calculate_Obj_New( dataset, w_best, s_frame, e_f
 
 % ----------------------------------------------------------------------- %
 [ ~, trackpath ] = getpath( dataset );
-[ ~, traintrackpath ] = getpath( 'training' );
-load([ traintrackpath, '\结构化学习\initial_w_New.mat']);
-df = zeros(6,1);
-df(1) = 1;
-df(2) = numel(wij)+1;
-df(3) = numel(wij)+numel(wit)+1;
-df(4) = numel(wij)+numel(wit)+numel(wid)+1;
-df(5) = numel(wij)+numel(wit)+numel(wid)+numel(wiv)+1;
-df(6) = numel(wij)+numel(wit)+numel(wid)+numel(wiv)+numel(wmj)+1;
-
-wij = w_best( df(1):df(2)-1 )'; % 动态分割赋值，以后修改特征就无需修改这里了
-wit = w_best( df(2):df(3)-1 )';
-wid = w_best( df(3):df(4)-1 )';
-wiv = w_best( df(4):df(5)-1 )';
-wmj = w_best( df(5):df(6)-1 )';
-wsj = w_best( df(6):end )';
-
-wij = w_best( 1:8 )'; % 不含增广的w
-wit = w_best( 9:13 )';
-wid = w_best( 14:21 )';
-wiv = w_best( 22:25 )';
-wmj = w_best( 26:29 )';
-wsj = w_best( 30:34 )';
-
-
-
-
-
-
-
-
+% 进来的 w_best 为列向量，此处先转换为行向量再进行相乘
 % 载入特征
-load([ trackpath, '\结构化学习\Feature_New.mat']);
+if numel(w_best)==40
+    load([ trackpath, '\结构化学习\Feature_Plus_New.mat']);
+else
+    load([ trackpath, '\结构化学习\Feature_New.mat']);
+end
+
+if exist('feature_fij_p','var')
+    % 如为增广的特征则使用增广的w 
+    wij = w_best( 1:9 )'; 
+    wit = w_best( 10:15 )';
+    wid = w_best( 16:24 )';
+    wiv = w_best( 25:29 )';
+    wmj = w_best( 30:34 )';
+    wsj = w_best( 35:40 )'; 
+
+    feature_fij = feature_fij_p;
+    feature_fit = feature_fit_p;
+    feature_fid = feature_fid_p;
+    feature_fiv = feature_fiv_p;
+    feature_fmj = feature_fmj_p;
+    feature_fsj = feature_fsj_p;
+else
+    % 不含增广的w
+    wij = w_best( 1:8 )'; 
+    wit = w_best( 9:13 )';
+    wid = w_best( 14:21 )';
+    wiv = w_best( 22:25 )';
+    wmj = w_best( 26:29 )';
+    wsj = w_best( 30:34 )';
+   
+end
+    
+% 组合目标函数
 % ----------------------------------------------------------------------- %
 
 obj_ij = 0;
@@ -60,11 +62,12 @@ for tt=s_frame:e_frame-1
     obj_it = obj_it + sum(sum( mat_fit.*fit{tt} ));
     
     mat_fid = cellfun(@(x)wid*x, feature_fid{tt});
+    % 这里有些特征为nan，看来是椭圆假说出了问题！先用下面这句弥补下
+    mat_fid(isnan(mat_fid)) = 0;
     obj_id = obj_id + sum(sum( mat_fid.*fid{tt} ));
     
     mat_fiv = cellfun(@(x)wiv*x, feature_fiv{tt});
     obj_iv = obj_iv + sum(sum( mat_fiv.*fiv{tt} ));
-    
 end
 for tt=s_frame+1:e_frame
     

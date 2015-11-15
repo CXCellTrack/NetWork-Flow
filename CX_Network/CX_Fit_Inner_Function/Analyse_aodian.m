@@ -1,5 +1,11 @@
 function [ seg, ed, flag_aodian, hasError ] = Analyse_aodian( seg, ed, max_aodian )
 
+% max_aodian为允许出现的最大连续凹点数目
+% seg为seglist
+% ed为edgelist
+% narginchk(2,3);
+
+
 hasError = 0;
 
 n_seg = size(seg, 1);
@@ -38,32 +44,37 @@ for j=1:n_seg-1
 end
 
 %% 2.判断凹点数目，过多则说明有错误（只能用这种办法来修复 edgelink 函数的bug）
+% 输入max_aodian时才需要判断是否会有过多的错误
+if exist('max_aodian', 'var')
+    % ============================================================== %
+    reach_max_aodian = 1; % 确定是否存在连续凹点的标示符
+    for j=1:n_seg-(max_aodian-1)
+        % 连续出现4个凹点，说明 edgelist 并非按正常逆时针在走了
+        for ia=0:max_aodian-1
+            if flag_aodian(j+ia)==0 % 连续几个点中，只要有一个非凹，就认为不存在连续凹点的错误情况
+                reach_max_aodian = 0;
+            end
+        end
 
-reach_max_aodian = 1; % 确定是否存在连续凹点的标示符
-for j=1:n_seg-(max_aodian-1)
-    % 连续出现4个凹点，说明 edgelist 并非按正常逆时针在走了
-    for ia=0:max_aodian-1
-        if flag_aodian(j+ia)==0 % 连续几个点中，只要有一个非凹，就认为不存在连续凹点的错误情况
-            reach_max_aodian = 0;
+        if reach_max_aodian
+            seg = fliplr(seg')';  % 将序列反转，变为顺时针
+            ed = fliplr(ed')';
+            flag_aodian = [ ~flag_aodian(1), ~fliplr(flag_aodian(2:end)) ];
+            break;
         end
     end
-    
-    if reach_max_aodian
-        seg = fliplr(seg')';  % 将序列反转，变为顺时针
-        ed = fliplr(ed')';
-        flag_aodian = [ ~flag_aodian(1), ~fliplr(flag_aodian(2:end)) ];
-        break;
+
+    for j=1:n_seg-4
+        % 反转后还是连续出现4个凹点，说明出现了8字形
+        if flag_aodian(j) && flag_aodian(j+1) && flag_aodian(j+2) && flag_aodian(j+3) && flag_aodian(j+4)
+            hasError = 1;
+            return;
+        end
     end
+    % ============================================================== %
 end
 
-for j=1:n_seg-4
-    % 反转后还是连续出现4个凹点，说明出现了8字形
-    if flag_aodian(j) && flag_aodian(j+1) && flag_aodian(j+2) && flag_aodian(j+3) && flag_aodian(j+4)
-        hasError = 1;
-        return;
-    end
-end
-        
+
 % 如果上述2步检查都无误，则说明无错误
 % ------------------------- 可删 ------------------------------- %
 for j=1:numel(flag_aodian)

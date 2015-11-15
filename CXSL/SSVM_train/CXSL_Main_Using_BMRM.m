@@ -18,20 +18,18 @@ clear;close all;
 
 [ ~, trackpath ] = getpath( 'training' );
 % 载入 CXSL_Test_Linear_all 中计算好的 w 作为初始值（实际发现效果并不好）
-if 1
+if 0
     load([ trackpath, '\结构化学习\initial_w_New.mat']);
     % 注意 w 的顺序不能乱
     w = [ wij, wit, wid, wiv, wmj, wsj ]';
     clear wij wit wid wiv wmj wsj;
 else
     % 随机选取w，种子控制 w 可复现
-    rng(0); 
-    w = rand(42,1);
-%     w = zeros(42,1);
+    w = zeros(34,1);
 end
 % 定义样本个数 N 和 单个样本中的帧数 frame
-N = 5;
-frame = 13;
+N = 1;
+frame = 65;
 s_frame = zeros(N,1);
 e_frame = zeros(N,1);
 % 目前有gt的帧数，对随机取样有影响
@@ -263,9 +261,10 @@ w_for_excel = w_best';
 plot(aver_loss, '-*');
 % 对得到的收敛曲线进行保存
 if 0
-    name = 'loss_15_10_y';
-    lossdir = [ trackpath, '\训练结果记录\BCFWavg_New\'];
-    save([lossdir, name, '.mat'], 'aver_loss','sample_loss','w_best','Wavg');
+    name = 'loss_1_65_y';
+    lossdir = [ trackpath, '\训练结果记录\BMRM\'];
+    mkdir(lossdir);
+    save([lossdir, name, '.mat'], 'aver_loss','sample_loss','w_best','W');
     saveas(1, [lossdir, name, '.fig']);
 end
 

@@ -40,25 +40,20 @@ toc;disp('计算约束条件...');
 
 %% 组建目标函数
 [ ~, traintrackpath ] = getpath( 'training' );
-if 1
-    if 1
-        disp('  载入之前 SSVM 训练得到的最佳 w...');
-        load([ traintrackpath, '\结构化学习\SSVM_Best_W_New.mat']);
-    else % 想要复现 excel 中记载的以前的实验结果，只需要手动填写 w_best 即可
-        disp('  载入手动填写的w...');
-        load([ traintrackpath, '\训练结果记录\BCFWavg_New\loss_15_10_y.mat'], 'Wavg');
-        w_best = zeros(40,1);
-    end
-else  
-    disp('  载入local SVM 训练出来的各事件w...');
-    % 也可以使用单独svm训练出来的各事件w，在进行组合
-    load([ traintrackpath, '\结构化学习\initial_w_New.mat']);
-    % 注意 w 的顺序不能乱
-    w_best = [ wij, wit, wid, wiv, wmj, wsj ]';
+if 0
+    disp('  载入上一次 SSVM 训练得到的w(线性核) & A与aplha（非线性核）...');
+    load([ traintrackpath, '\结构化学习\SSVM_Best_W_New.mat']);
+else
+    disp('  载入之前 SSVM 训练保存的A和alpha...'); 
+    name = 'loss_1_65_y';
+    lossdir = [ traintrackpath, '\训练结果记录\BCFW\'];
+    load([lossdir, name, '.mat']);
 end
 
 disp('组建目标函数...');tic
-object_function = CXSL_Calculate_Obj_New( dataset, w_best, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj );
+object_function = CXSL_Calculate_Obj_hunhe( dataset, s_frame, e_frame,...
+    w_best, A_best, alpha_best, kernel_type, cmd, islinear, ...
+    fij, fit, fid, fiv, fmj, fsj );
 toc
 
 %% 最终求解
@@ -67,7 +62,7 @@ clearvars -except F object_function s_frame e_frame  fij fid fiv fit fsj fmj los
 % 注意，原先采用先算出 fai(x,z) = <feature,z>，在计算 obj = <w,fai(x,z)>;
 % 现在采用先计算 <w,feature>，在计算 obj = <w,feature>*z，速度得到了明显提升
 % 但这是针对于一次计算而言，如果在循环中每次都要这么计算目标函数，速度还是没有原方法快 2015.6.24
-
+% options = sdpsettings('verbose',0,'solver','gurobi');
 options = sdpsettings('verbose',0,'solver','cplex','saveduals',0);
 sol = solvesdp( F, -object_function, options )
 
@@ -116,7 +111,7 @@ end
 
 % 保存得到的流量变量结果到 track_data 中，供后续画图用（通常不要保存！）
 if 0
-    txtpath = [trackpath, '\测试结果记录\BCFWavg\5_13_y.txt'];
+    txtpath = [trackpath, '\测试结果记录\BCFW\1_65_y.txt'];
     file = fopen(txtpath, 'w'); fclose(file);
     save(strrep(txtpath,'txt','mat'), 'PRF','COUNT','Fij','Fit','Fid','Fiv','Fmj','Fsj'); % 注意修改mat名称
     

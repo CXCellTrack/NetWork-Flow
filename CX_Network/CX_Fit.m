@@ -65,7 +65,14 @@ tic;
     %% 7. 将轮廓按逆时针方向连接起来（实际上，由于一些奇怪的形状，连接方式有可能出现错乱，出现顺时针或8字型连接）
     % 由于这个edgelink函数的复杂性，难以修复这个bug，因此选择在后面的操作中间接弥补
     % 这个地方的10像素目前还没被用到，因为有些bug，所以需要自己去除过短的边际
-    [edgelist, ~] = edgelink( edgeim, 10 );  % edgelist是每个前景的边缘像素集合，labelededgeim是像素点对应的前景编号
+    [rj, ~, ~, ~] = findendsjunctions(edgeim);
+    if ~isempty(rj)
+        lunkuo = 'error';
+        e = [];
+        return;
+    end
+    [edgelist] = CX_edgelink( edgeim );
+%     [edgelist, ~] = edgelink( edgeim, 10 );  % edgelist是每个前景的边缘像素集合，labelededgeim是像素点对应的前景编号
     
     %% 8. 去除过小的边际（这段可作为cell删减的模板）（利用双wihle循环删除cell，实现变长度循环）   
     % 调用内部函数
@@ -108,14 +115,14 @@ for i_f= 1 : n % 前景编号按从上到下扫描的方式
         if ~isequal(seg(end,:), seg(1,:))
         	seg = [seg; seg(1,:)]; % 如果不等，则需补上一位
         end
-       %% 1.分析凹点个数是否正确
+       %% 1.分析凹点个数是否正确（使用自己写的edgelink后，可以在之前就判断是否有错误！2015.11.5）
         max_aodian = 3; % 允许连续出现的最多凹点数（要根据数据集的复杂程度决定）
-        [ seg, ed, flag_aodian, hasError ] = Analyse_aodian( seg, ed, max_aodian );
-        if hasError
-            lunkuo = 'error';
-            close('1');
-            return;
-        end
+        [ seg, ed, flag_aodian, hasError ] = Analyse_aodian( seg, ed );
+%         if hasError
+%             lunkuo = 'error';
+%             close('1');
+%             return;
+%         end
  
        %% 4.以下进行椭圆拟合部分
         na = sum(flag_aodian);   % na为凹点总数目 na = ‘num_aodian’

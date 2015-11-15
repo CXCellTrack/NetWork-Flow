@@ -25,12 +25,14 @@ Fop6 = [];
 Fop7 = [];
 
 %######################################## 建立约束条件 #############################################
-disp('   构建约束1：进出守恒……');tic
+disp('   构建约束1：进出守恒……');
+tic
 %% 约束条件1： 进出守恒
 
 if e_frame - s_frame ~= 1 % 必须在帧数不为2时才有此条件
     %#############  中间帧的入口出口守恒  ###########
     for t = s_frame+1:e_frame-1
+        disp(['正在计算第',num2str(t),'帧的进出守恒...']);
         for j=1:n(t)
             sum_fij = 0;
             sum_fid = 0;
@@ -55,7 +57,8 @@ if e_frame - s_frame ~= 1 % 必须在帧数不为2时才有此条件
         end
     end
     
-end % end if
+end
+% end if
 
 %#############  2到最后帧入口唯一  ###########
 for t = s_frame+1:e_frame
@@ -89,16 +92,16 @@ for j=1:n(t)
     % 出口最多有一条   迁移出去        消失        母细胞        下一帧split        下一帧融合
     F2 = [ F2, sum(fij{t}(j,:)) + fit{t}(j) + sum(fid{t}(j,:)) + sum(fiv{t}(j,:)) + sum_fmj <= 1 ];
 end
-    
-%#####################################
-%%
-toc;disp('   构建约束2：可选约束……');tic
-if use_op_cons % 尝试去掉可选约束
-%% 约束条件2： 可选约束
-%% 可选约束1、2、3
+
+toc;
+disp('   构建约束2：可选约束……');
+disp(use_op_cons);
+tic
+
+%% 可选约束1
 %################################################################
 % 针对数据集3（Fluo-N2DH-SIM+）的约束（禁止merge和split事件的发生！）
-if 1
+if 0
     disp('Attention! merge&split event has been canceled！')
     for t = s_frame+1:e_frame
         Fop1 = [ Fop1, sum(fmj{t}(:))<=0 ];
@@ -108,118 +111,129 @@ if 1
     end
 end
 
-% %################## 可选择的约束一 #################（与真实情况有点矛盾）
-% % 分裂出去的不能仍在同一个前景中
-% for t = s_frame:e_frame-1
-%     for j=1:n(t)
-%         tmp_conflict = 0;
-%         for mm=1:6
-%             sons = candidate_k_next{t}{j,mm};
-%             if Ellipse{t+1}{sons(1)}.ind_region == Ellipse{t+1}{sons(2)}.ind_region % 分裂出去的不能仍在同一个前景中
-%                 tmp_conflict = tmp_conflict + fid{t}(j,mm);
-%             end
-%         end
-%         % 如果邻域内都是单独前景，tmp_conflict可能为double 0，因此要判断
-%         if ~isa(tmp_conflict, 'double')
-%             Fop1 = [ Fop1, tmp_conflict <= 0];
-%         end
-%     end
-% end
-% 
-% %################## 可选择的约束二 #################（与真实情况有点矛盾）
-% % 不允许不是同一个前景的细胞发生融合 在pair形式下实现这个很容易，只需要比较融合pair中的2细胞是否在一个前景内就可以了
-% for t = s_frame+1:e_frame
-%     for j=1:n(t)
-%         tmp_conflict = 0;
-%         for mm=1:6
-%             sources = candidate_k_last{t}{j,mm};
-%             if Ellipse{t-1}{sources(1)}.ind_region ~= Ellipse{t-1}{sources(2)}.ind_region 
-%                 tmp_conflict = tmp_conflict + fmj{t}(j,mm);
-%             end
-%         end
-%         % 如果邻域内都是单独前景，tmp_conflict可能为0，因此要判断
-%         if ~isa(tmp_conflict, 'double')
-%             Fop2 = [ Fop2, tmp_conflict <= 0];
-%         end
-%     end
-% end
-% 
-% %################## 可选择的约束三 #################
-% % 融合之后不允许立刻分裂
-% for t = s_frame+1:e_frame-1
-%     for j=1:n(t)
-%         Fop3 = [ Fop3, sum(fmj{t}(j,:)) + sum(fid{t}(j,:)) <= 1 ];
-%     end
-% end
-
-%################## 可选择的约束四 #################（错误的约束，注释掉）
-% 因为单假说前景不是必须被解释，而多假说前景的约束写在矛盾集合处，因此此处注释掉
-%% 可选约束4是错误的！
-%     for t = s_frame+1:e_frame % 2-t 帧要求每个前景内至少有一个被解释（入口解释）
-%         for j=1:n(t)
-%             sum_fid = 0;
-%             sum_fiv = 0;
-%             sum_fij = 0;
-%             % 单独前景必须被解释，即入口和为1
-%             if Ellipse{t}{j}.num_hypoth == 1
-% 
-%                 % sum_fij 为所有迁移到 j 的fij之和（入口和），出口和可以用 sum(fij{t}(j,:)) 表示 
-%                 for ind=1:size(conflict_fij{t-1}{j}, 1)
-%                     sum_fij = sum_fij + fij{t-1}( conflict_fij{t-1}{j}(ind,1), conflict_fij{t-1}{j}(ind,2) );
-%                 end
-% 
-%                 % sum_fid 为所有分裂到包含 j 的 pair 的 fid 之和
-%                 for ind=1:numel(conflict_pair_next_xy{t}{j})/2
-%                     sum_fid = sum_fid + fid{t-1}( conflict_pair_next_xy{t}{j}(ind,1), conflict_pair_next_xy{t}{j}(ind,2) );
-%                     sum_fiv = sum_fiv + fiv{t-1}( conflict_pair_next_xy{t}{j}(ind,1), conflict_pair_next_xy{t}{j}(ind,2) );
-%                 end
-%                 Fop4 = [ Fop4, sum_fij + fsj{t}(j) + sum(fmj{t}(j,:)) + sum_fid + sum_fiv >= 1 ];
-%             else
-%                 % 多目标前景中至少有一个要被解释
-%                 %
-%                 % 这部分写在j到j+jplus为一个前景处 
-%             end
-%         end
-%     end
-% 
-%     t = s_frame; % 同时需要添加第一帧的出口必须被解释
-%     for j=1:n(t)
-%         if Ellipse{t}{j}.num_hypoth == 1
-%             sum_fmj = 0;
-%             % sum_fmj 为所有包含 j 的融合 pair 的 fmj 之和
-%             for ind=1:numel(conflict_pair_last_xy{t}{j})/2
-%                 sum_fmj = sum_fmj + fmj{t+1}( conflict_pair_last_xy{t}{j}(ind,1), conflict_pair_last_xy{t}{j}(ind,2) );
-%             end
-%             Fop4 = [ Fop4, sum(fij{t}(j,:)) + fit{t}(j) + sum(fid{t}(j,:)) + sum(fiv{t}(j,:)) + sum_fmj >= 1 ];
-%         else
-%             % 多目标前景中至少有一个要被解释
-%             %
-%             % 这部分写在j到j+jplus为一个前景处
-%         end
-%     end
-%% 可选择约束5 
-
-%##################  #################
-% 要求分离split出去的2个子细胞必须在同一前景内
-% for t = s_frame:e_frame-1
-%     for j=1:n(t)
-%         tmp_conflict = 0;
-%         for mm=1:6
-%             sons = candidate_k_next{t}{j,mm};
-%             if Ellipse{t+1}{sons(1)}.ind_region ~= Ellipse{t+1}{sons(2)}.ind_region % 分裂出去的必须是单独前景
-%                 tmp_conflict = tmp_conflict + fiv{t}(j,mm);
-%             end
-%         end
-%         % 如果邻域内都是单独前景，tmp_conflict可能为double 0，因此要判断
-%         if ~isa(tmp_conflict, 'double')
-%             Fop5 = [ Fop5, tmp_conflict <= 0];
-%         end
-%     end
-% end
-%#################################################
-%%
+if any(use_op_cons==1)
+    %################## 可选择的约束一 #################（与真实情况有点矛盾）
+    % 分裂出去的不能仍在同一个前景中
+    for t = s_frame:e_frame-1
+        for j=1:n(t)
+            tmp_conflict = 0;
+            for mm=1:6
+                sons = candidate_k_next{t}{j,mm};
+                if Ellipse{t+1}{sons(1)}.ind_region == Ellipse{t+1}{sons(2)}.ind_region % 分裂出去的不能仍在同一个前景中
+                    tmp_conflict = tmp_conflict + fid{t}(j,mm);
+                end
+            end
+            % 如果邻域内都是单独前景，tmp_conflict可能为double 0，因此要判断
+            if ~isa(tmp_conflict, 'double')
+                Fop1 = [ Fop1, tmp_conflict <= 0];
+            end
+        end
+    end
 end
-toc;disp('   构建约束3：矛盾约束……');tic
+
+%% 可选约束2
+if any(use_op_cons==2)
+    %################## 可选择的约束二 #################（与真实情况有点矛盾）
+    % 不允许不是同一个前景的细胞发生融合 在pair形式下实现这个很容易，只需要比较融合pair中的2细胞是否在一个前景内就可以了
+    for t = s_frame+1:e_frame
+        for j=1:n(t)
+            tmp_conflict = 0;
+            for mm=1:6
+                sources = candidate_k_last{t}{j,mm};
+                if Ellipse{t-1}{sources(1)}.ind_region ~= Ellipse{t-1}{sources(2)}.ind_region 
+                    tmp_conflict = tmp_conflict + fmj{t}(j,mm);
+                end
+            end
+            % 如果邻域内都是单独前景，tmp_conflict可能为0，因此要判断
+            if ~isa(tmp_conflict, 'double')
+                Fop2 = [ Fop2, tmp_conflict <= 0];
+            end
+        end
+    end
+end
+
+%% 可选约束3
+if any(use_op_cons==3)
+    % %################## 可选择的约束三 #################
+    % 融合之后不允许立刻分裂
+    for t = s_frame+1:e_frame-1
+        for j=1:n(t)
+            Fop3 = [ Fop3, sum(fmj{t}(j,:)) + sum(fid{t}(j,:)) <= 1 ];
+        end
+    end
+end
+
+%% 可选约束4是错误的！（已弃用）
+    %################## 可选择的约束四 #################（错误的约束，注释掉）
+    % 因为单假说前景不是必须被解释，而多假说前景的约束写在矛盾集合处，因此此处注释掉
+    %     for t = s_frame+1:e_frame % 2-t 帧要求每个前景内至少有一个被解释（入口解释）
+    %         for j=1:n(t)
+    %             sum_fid = 0;
+    %             sum_fiv = 0;
+    %             sum_fij = 0;
+    %             % 单独前景必须被解释，即入口和为1
+    %             if Ellipse{t}{j}.num_hypoth == 1
+    % 
+    %                 % sum_fij 为所有迁移到 j 的fij之和（入口和），出口和可以用 sum(fij{t}(j,:)) 表示 
+    %                 for ind=1:size(conflict_fij{t-1}{j}, 1)
+    %                     sum_fij = sum_fij + fij{t-1}( conflict_fij{t-1}{j}(ind,1), conflict_fij{t-1}{j}(ind,2) );
+    %                 end
+    % 
+    %                 % sum_fid 为所有分裂到包含 j 的 pair 的 fid 之和
+    %                 for ind=1:numel(conflict_pair_next_xy{t}{j})/2
+    %                     sum_fid = sum_fid + fid{t-1}( conflict_pair_next_xy{t}{j}(ind,1), conflict_pair_next_xy{t}{j}(ind,2) );
+    %                     sum_fiv = sum_fiv + fiv{t-1}( conflict_pair_next_xy{t}{j}(ind,1), conflict_pair_next_xy{t}{j}(ind,2) );
+    %                 end
+    %                 Fop4 = [ Fop4, sum_fij + fsj{t}(j) + sum(fmj{t}(j,:)) + sum_fid + sum_fiv >= 1 ];
+    %             else
+    %                 % 多目标前景中至少有一个要被解释
+    %                 %
+    %                 % 这部分写在j到j+jplus为一个前景处 
+    %             end
+    %         end
+    %     end
+    % 
+    %     t = s_frame; % 同时需要添加第一帧的出口必须被解释
+    %     for j=1:n(t)
+    %         if Ellipse{t}{j}.num_hypoth == 1
+    %             sum_fmj = 0;
+    %             % sum_fmj 为所有包含 j 的融合 pair 的 fmj 之和
+    %             for ind=1:numel(conflict_pair_last_xy{t}{j})/2
+    %                 sum_fmj = sum_fmj + fmj{t+1}( conflict_pair_last_xy{t}{j}(ind,1), conflict_pair_last_xy{t}{j}(ind,2) );
+    %             end
+    %             Fop4 = [ Fop4, sum(fij{t}(j,:)) + fit{t}(j) + sum(fid{t}(j,:)) + sum(fiv{t}(j,:)) + sum_fmj >= 1 ];
+    %         else
+    %             % 多目标前景中至少有一个要被解释
+    %             %
+    %             % 这部分写在j到j+jplus为一个前景处
+    %         end
+    %     end
+
+%% 可选择约束5 
+if any(use_op_cons==5)
+    %##################  #################
+    % 要求分离split出去的2个子细胞必须在同一前景内
+    for t = s_frame:e_frame-1
+        for j=1:n(t)
+            tmp_conflict = 0;
+            for mm=1:6
+                sons = candidate_k_next{t}{j,mm};
+                if Ellipse{t+1}{sons(1)}.ind_region ~= Ellipse{t+1}{sons(2)}.ind_region % 分裂出去的必须是单独前景
+                    tmp_conflict = tmp_conflict + fiv{t}(j,mm);
+                end
+            end
+            % 如果邻域内都是单独前景，tmp_conflict可能为double 0，因此要判断
+            if ~isa(tmp_conflict, 'double')
+                Fop5 = [ Fop5, tmp_conflict <= 0];
+            end
+        end
+    end
+    %#################################################
+end
+toc
+disp('   构建约束3：矛盾约束……');
+tic
+
 %% 约束条件3： 矛盾假说集合排除 
 
 conflict = cell(e_frame, 1);
@@ -234,13 +248,18 @@ for t = s_frame:e_frame-1
         end
         
         n_danduan = numel(Ellipse{t}{j}.flag_combine);
+        if n_danduan==1
+            j = j + 1;
+            continue;
+        end
         % 这一部分求出j到j+jplus都属于同一前景
-        jplus = Ellipse{t}{j}.num_hypoth - 1;
-%         % j+jplus不能超过总数
-%         while j+jplus<=numel(Ellipse{t}) && Ellipse{t}{j+jplus}.ind_region == Ellipse{t}{j}.ind_region
-%             jplus = jplus + 1;
-%         end
-%         jplus = jplus - 1;
+%         jplus = Ellipse{t}{j}.num_hypoth - 1;
+        jplus = 1;
+        % j+jplus不能超过总数
+        while j+jplus<=numel(Ellipse{t}) && Ellipse{t}{j+jplus}.ind_region == Ellipse{t}{j}.ind_region
+            jplus = jplus + 1;
+        end
+        jplus = jplus - 1;
         %##################### j到j+jplus为一个前景 ####################
             
         %% A. 此处添加一个多目标前景至少要有一个入口的条件
@@ -299,7 +318,7 @@ for t = s_frame:e_frame-1
             %##########################################   
             %
             % 以上一段是在一个多目标前景内设置入口至少为1的约束
-            % 即保证每个前景都必须被解释，不允许虚景的存在
+            % 即保证每个多目标前景都必须被解释，不允许虚景的存在
             %
             %##############################################################
 
@@ -403,8 +422,9 @@ for t = s_frame:e_frame-1
             
     end  %## end while
 end
-%%
+
 toc
+
 %% 导出最终的目标函数与总约束
 
 %#################################
@@ -447,7 +467,6 @@ F = [ F1, F2, F3, F4, Foptional ];
 % clear F1 F2 F3 F4 Foptional;
 % 保存目标函数与约束条件，清空缓存
 % clearvars -except frame Ellipse F object_function fij fid fiv fit fsj fmj s_frame e_frame fai_x_z sum_cost; 
-
 
 end
 

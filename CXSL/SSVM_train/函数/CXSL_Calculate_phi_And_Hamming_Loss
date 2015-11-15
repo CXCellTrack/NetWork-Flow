@@ -1,0 +1,184 @@
+function [ fij fit fid fiv fmj fsj fai_x_z cost_for_train ] = CXSL_Calculate_phi_And_Hamming_Loss( s_frame, e_frame )
+
+%
+% 在给定 w 的情况下，生成变量矩阵和目标函数
+% 利用公式（2)：L(x,z,w) = w'*fai(x,z)
+% 定义 w' = [ wij, wit, wid, wiv, wmj, wsj ]  
+% fai(x,z)也按相同的顺序排列
+% 最后输出各个事件的变量矩阵和目标函数 object_f，送到外部进行ILP求解
+%
+% s_frame 为开始帧  e_frame 为结束帧
+% tic;
+dataset = 'training'; % 这个函数也只在训练中使用
+[ ~, trackpath ] = getpath( dataset );
+
+load([ trackpath, '\Pair\Pre_data_New.mat'], 'n','conflict_pair_last_xy','conflict_pair_next_xy','conflict_fij');
+% 载入特征
+load([ trackpath, '\结构化学习\Feature_New.mat']);
+% 载入标准答案GT
+load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
+
+% 步骤1已被注释
+%% 2.构建变量矩阵
+fij = cell(e_frame-1,1);
+fid = cell(e_frame-1,1);
+fit = cell(e_frame-1,1);
+fiv = cell(e_frame-1,1);
+fsj = cell(e_frame,1);
+fmj = cell(e_frame,1);
+
+for t = s_frame:e_frame-1
+    %  t中第m个前景中的第width个细胞   
+    fij{t} = binvar(n(t), 4, 'full'); %%fij变量矩阵
+    fit{t} = binvar(n(t), 1, 'full');   %%消失
+    fid{t} = binvar(n(t), 6, 'full');   %%母细胞
+    fiv{t} = binvar(n(t), 6, 'full');   %%分裂
+end
+
+for t = s_frame+1:e_frame
+    fmj{t} = binvar(n(t), 6,  'full');   %%融合 ##注意这个矩阵代表（t * t-1），其他都是（t * t+1）
+    fsj{t} = binvar(n(t), 1, 'full');   %%出现 
+end
+
+%% 3.生成原始目标函数
+% 利用公式（2)：L(x,z,w) = w'*fai(x,z)
+% 利用公式（8): delta(z,z*) = 1/|z*| * sum(z* * (1-z))
+
+fai_fij = 0;
+fai_fit = 0;
+fai_fid = 0;
+fai_fiv = 0;
+fai_fmj = 0;
+fai_fsj = 0;
+
+% ======================================================================= %
+% 在特征不全的情况下要使用步骤1中得到映射表计算
+% 在特征齐全的情况下直接矩阵点乘更快（6.5秒 VS 31.4秒）
+% ======================================================================= %
+% A.使用矩阵乘法计算：
+% tic;
+for t = s_frame:e_frame-1
+    % 去掉sum后之间相加速度更快 由 2.9168s 到 2.82s
+    fai_fij = fai_fij + cell_dot_mutil( feature_fij{t}, fij{t} );
+
+    fai_fit = fai_fit + cell_dot_mutil( feature_fit{t}, fit{t} );
+
+    fai_fid = fai_fid + cell_dot_mutil( feature_fid{t}, fid{t} );
+
+    fai_fiv = fai_fiv + cell_dot_mutil( feature_fiv{t}, fiv{t} );
+end
+% toc;
+for t = s_frame+1:e_frame
+    
+    fai_fmj = fai_fmj + cell_dot_mutil( feature_fmj{t}, fmj{t} );
+
+    fai_fsj = fai_fsj + cell_dot_mutil( feature_fsj{t}, fsj{t} );
+end
+
+% 将所有的 fai_f 组合成列向量（增广向量）一共42维
+fai_x_z = [ fai_fij; fai_fit; fai_fid; fai_fiv; fai_fmj; fai_fsj; ];
+
+%% 4.计算损失函数
+FP.fij = 0;
+FP.fit = 0;
+FP.fid = 0;
+FP.fiv = 0;
+FP.fmj = 0;
+FP.fsj = 0;
+
+TN.fij = 0;
+TN.fit = 0;
+TN.fid = 0;
+TN.fiv = 0;
+TN.fmj = 0;
+TN.fsj = 0;
+
+Tcount = zeros(6,1);
+Pcount = sdpvar(6,1);
+
+% 损失函数都按照 false negative 计算，即 f*=1 && f=0 时才有损失
+for t = s_frame:e_frame-1
+    FP.fij = FP.fij + sum(sum( (1-Fij{t}).*fij{t} ));
+    TN.fij = TN.fij + sum(sum( Fij{t}.*(1-fij{t}) ));
+    Tcount(1) = Tcount(1) + sum(sum( Fij{t})); % 统计出 Fij{t}中1的个数
+    Pcount(1) = Pcount(1) + sum(sum( fij{t}));
+    
+    FP.fit = FP.fit + sum(sum( (1-Fit{t}).*fit{t} ));
+    TN.fit = TN.fit + sum(sum( Fit{t}.*(1-fit{t}) ));
+    Tcount(2) = Tcount(2) + sum(sum( Fit{t}));
+    Pcount(2) = Pcount(2) + sum(sum( fit{t}));
+    
+    FP.fid = FP.fid + sum(sum( (1-Fid{t}).*fid{t} ));
+    TN.fid = TN.fid + sum(sum( Fid{t}.*(1-fid{t}) ));
+    Tcount(3) = Tcount(3) + sum(sum( Fid{t}));
+    Pcount(3) = Pcount(3) + sum(sum( fid{t}));
+    
+    FP.fiv = FP.fiv + sum(sum( Fiv{t}.*fiv{t} ));
+    TN.fiv = TN.fiv + sum(sum( (1-Fiv{t}).*(1-fiv{t}) ));
+    Tcount(4) = Tcount(4) + sum(sum( Fiv{t}));
+    Pcount(4) = Pcount(4) + sum(sum( fiv{t}));
+end
+for t = s_frame+1:e_frame
+    FP.fmj = FP.fmj + sum(sum( (1-Fmj{t}).*fmj{t} ));
+    TN.fmj = TN.fmj + sum(sum( Fmj{t}.*(1-fmj{t}) ));
+    Tcount(5) = Tcount(5) + sum(sum( Fmj{t}));
+    Pcount(5) = Pcount(5) + sum(sum( fmj{t}));
+    
+    FP.fsj = FP.fsj + sum(sum( (1-Fsj{t}).*fsj{t} ));
+    TN.fsj = TN.fsj + sum(sum( Fsj{t}.*(1-fsj{t}) ));
+    Tcount(6) = Tcount(6) + sum(sum( Fsj{t}));
+    Pcount(6) = Pcount(6) + sum(sum( fsj{t}));
+end
+
+% ============= 注意：论文中的方法是吧所有的count加起来在计算 ============== %
+event_FP = FP.fij + FP.fit + FP.fid + FP.fiv + FP.fmj + FP.fsj;
+event_TN = TN.fij + TN.fit + TN.fid + TN.fiv + TN.fmj + TN.fsj;
+
+%% 5.得到目标函数
+% ======================================================================= %
+% 使用汉明损失的计算方式
+cost_for_train = (event_FP + event_TN)/(sum(Tcount) + sum(Pcount));
+
+
+
+end
+
+function sum_f = cell_dot_mutil( feature, z )
+%
+% f 为特征向量cell	n(t)*n(t+1)
+% g 为流程变量矩阵
+% 输出 sum_f 为该cell内所有特征向量之和
+% ===================================
+
+% 1. for 循环式计算 4.75秒
+% sum_f = zeros( size(feature{1,1}) );
+% [h w] = size(feature);
+% for i=1:h
+%     for j=1:w
+%         sum_f = sum_f + feature{i, j}* z(i,j);
+%     end
+% end
+
+% 2. arrayfun运算 3.10秒
+sum_f = 0;
+ss = numel(feature);
+% feature1 = cellfun(@(x)x', feature, 'un',0);
+feature2 = reshape(feature, ss, 1);
+z1 = reshape(z, ss, 1);
+f_z = arrayfun(@(x) feature2{x}*z1(x), 1:ss, 'un',0);
+for x=1:ss
+    sum_f = sum_f + f_z{x};
+end
+
+end
+
+
+
+
+
+
+
+
+
+
+

@@ -1,13 +1,24 @@
-function [ fai_x_z ] = CXSL_Calculate_fai_x_zstar_New( s_frame, e_frame, str)
+function [ fai_x_z ] = CXSL_Calculate_phi_x_zstar_New( w, s_frame, e_frame, str)
 
 % ============================= %
 % 这个函数用于计算 fai(x,z*) 
 % 也可以计算 fai(x,z^) 但 fai(x,z^) 可以由ILP中的结果 value 出来，因此无需重复计算
 % ============================= %
-% 载入特征
+
 dataset = 'training';
 [ ~, trackpath ] = getpath( dataset );
-load([ trackpath, '\结构化学习\Feature_New.mat']);
+% 载入特征
+if numel(w)==40
+    load([ trackpath, '\结构化学习\Feature_Plus_New.mat']);
+    feature_fij = feature_fij_p;
+    feature_fit = feature_fit_p;
+    feature_fid = feature_fid_p;
+    feature_fiv = feature_fiv_p;
+    feature_fmj = feature_fmj_p;
+    feature_fsj = feature_fsj_p;
+else
+    load([ trackpath, '\结构化学习\Feature_New.mat']);
+end
 % 载入标准答案GT
 load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
 
@@ -19,19 +30,9 @@ fai_fmj = 0;
 fai_fsj = 0;
 
 if strcmp(str, 'hat') % 这部分已经由ILP的结果中value出，无需重新计算
-    % 计算当前w下的fai(x,z^)
-    for t = s_frame:e_frame-1   
-        fai_fij = fai_fij + cell_dot_mutil( feature_fij{t}, Fij_c{t} );
-        fai_fit = fai_fit + cell_dot_mutil( feature_fit{t}, Fit_c{t} );
-        fai_fid = fai_fid + cell_dot_mutil( feature_fid{t}, Fid_c{t} );
-        fai_fiv = fai_fiv + cell_dot_mutil( feature_fiv{t}, Fiv_c{t} );   
-    end
-    for t = s_frame+1:e_frame
-        fai_fmj = fai_fmj + cell_dot_mutil( feature_fmj{t}, Fmj_c{t} );  
-        fai_fsj = fai_fsj + cell_dot_mutil( feature_fsj{t}, Fsj_c{t} );
-    end
-    
-elseif strcmp(str, 'star')
+    %
+end
+if strcmp(str, 'star')
     % 计算标准答案中的fai(x,z*)
 %     tic;
     for t = s_frame:e_frame-1  
