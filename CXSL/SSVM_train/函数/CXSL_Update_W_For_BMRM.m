@@ -30,7 +30,7 @@ end
 F = [ F, kexi >= 0 ];
 
 % 求解二次规划问题
-options = sdpsettings('verbose',0,'solver','cplex','saveduals',0);
+options = sdpsettings('verbose',0,'solver','gurobi');
 sol = solvesdp( F, obj_fun, options);
 
 

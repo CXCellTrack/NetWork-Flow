@@ -1,4 +1,4 @@
-function [ fij fit fid fiv fmj fsj fai_x_z cost_for_train ] = CXSL_Calculate_phi_And_Loss( w, s_frame, e_frame )
+function [ fij fit fid fiv fmj fsj fai_x_z cost_for_train cost_for_train_all ] = CXSL_Calculate_phi_And_Loss( w, s_frame, e_frame )
 
 %
 % 在给定 w 的情况下，生成变量矩阵和目标函数
@@ -108,7 +108,6 @@ TP.fsj = 0;
 % recall = tp/(tp+fn);
 
 Tcount = zeros(6,1); % tp+tn
-Pcount = zeros(6,1); % tp+fn
 % 损失函数都按照 false negative 计算，即 f*=1 && f=0 时才有损失
 for t = s_frame:e_frame-1
     TP.fij = TP.fij + sum(sum( Fij{t}.*fij{t} ));
@@ -141,7 +140,7 @@ event_TP = TP.fij + TP.fit + TP.fid + TP.fiv + TP.fmj + TP.fsj;
 
 % 考虑2到最后帧的入口，若椭圆j真实入口为0，且分配入口为1，则记作一次损失
 fd_TP = 0;
-fd_Pcount = 0; % 统计测试中“虚景“出现次数
+% fd_Pcount = 0; % 统计测试中“虚景“出现次数
 fd_Tcount = 0; % 统计GT中“虚景”（即入口出口为0的椭圆）出现的次数
 
 for t = s_frame+1:e_frame
@@ -238,7 +237,7 @@ end
 
 event_FN = sum(Tcount) - event_TP; % 细胞事件的FN（测试没发生但实际发生了）
 fd_FN = fd_Tcount - fd_TP; % 虚景的FN（测试不为虚但实际为虚）
-% cost_for_train = (event_FN + fd_FN)/ sum(Tcount); % 类似recall的计算（仅用于SSVM训练时的cost）
+cost_for_train_all = (event_FN + fd_FN)/ sum(Tcount); % 类似recall的计算（仅用于SSVM训练时的cost）
 cost_for_train = event_FN/ sum(Tcount);
 
 % move_divide_FN = TP.fij + TP.fid*50;

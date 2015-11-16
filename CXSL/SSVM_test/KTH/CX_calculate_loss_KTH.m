@@ -160,7 +160,7 @@ end
 % ------------------------------------------------------ %
 if 0
     txtpath = [ trackpath, '\测试结果记录\KTH.txt'];
-    fid = fopen(txtpath, 'w'); fclose(fid);
+    fidin = fopen(txtpath, 'w'); fclose(fidin);
     save(strrep(txtpath,'txt','mat'), 'PRF','COUNT','fij','fid','fsj','fit'); % 注意修改mat名称
 end
 

@@ -17,16 +17,24 @@
 clear;close all;
 
 [ ~, trackpath ] = getpath( 'training' );
-% 载入 CXSL_Test_Linear_all 中计算好的 w 作为初始值（实际发现效果并不好）
+load([ trackpath, '\结构化学习\initial_w_New.mat']);
+% 注意 w 的顺序不能乱
 if 0
-    load([ trackpath, '\结构化学习\initial_w_New.mat']);
-    % 注意 w 的顺序不能乱
     w = [ wij, wit, wid, wiv, wmj, wsj ]';
-    clear wij wit wid wiv wmj wsj;
 else
-    % 随机选取w，种子控制 w 可复现
-    w = zeros(34,1);
+%     w = [ wij,bij, wit,bit, wid,bid, wiv,biv, wmj,bmj, wsj,bsj ]'; % 原版b
+    % 第二个数据集
+%     w = [-18.21315239	2.048551055	0.090611096	-0.07830978	-0.681768441	0.091705287	-0.284558766	0.113666465	-16.77170209	-2.820207584	-1.606735489	-2.170929556	-2.000511632	2.42450433	-4.406444861	10.34098417	1.758814312	-0.819906672	-2.159095585	-4.969572233	1.29607646	0.202318113	3.379177651	-14.25716614	7.109097539	3.366559674	2.10659084	-2.499899814	-3.9849466	2.501397849	1.351917771	4.699879458	-0.525793863	-0.261628668	-4.945586679	-1.846739083	-4.998199696	-0.003648138	1.737582541	-8.35761154]';
+    % 第三个数据集
+    w = [-17.69956928	1.61055833	-0.001787913	0.199592206	-0.287005286	-1.058810184	-0.194715268	0.170821175	-15.86943474	-2.459629861	-1.102503407	-1.233255838	-1.209682446	-2.849135318	-5.932152347	3.635597276	3.112043952	0.905772748	-0.112320949	-0.658275898	4.373948249	0.504445114	-0.211398811	-3.571706443	0	0	0	0	0	0	0	0	0	0	-2.873279295	-0.074622812	-1.438747225	-0.381464188	-2.838608426	-5.896985464]';
 end
+clear wij wit wid wiv wmj wsj;
+% 也可以选择随机的w或全0的w
+if 0
+    % initial_w是增广的
+    w = zeros(numel(w), 1);
+end
+
 % 定义样本个数 N 和 单个样本中的帧数 frame
 N = 1;
 frame = 65;
@@ -65,12 +73,12 @@ for ind=1:N
     disp(['  ', num2str(s_frame(ind)), '——', num2str(e_frame(ind)), '帧...']);
 end
 
-% ============================== 全局变量 =============================== %
-% 全部变量最终都被保存下来，局部变量无需保存
-
 % 初始化： 定义A、B、循环次数上限 iter、间隙阈值 gap
-iter = 50;
+iter = 100;
 gap = 0.0010; % 按照 O(1/gap) 的收敛速度，应该在百循环左右完成
+
+%% ============================== 全局变量 =============================== %
+% 全部变量最终都被保存下来，局部变量无需保存
 gap_cur = zeros(iter,1); % 记录每次得到的gap
 
 A = cell(iter,1);
@@ -92,9 +100,11 @@ phi_x_z_hat = cell(N,1);
 delta_zstar_zhat = zeros(N,1);
 psi_zstar_zhat = cell(N,1);
 % ======================================================================= %
-
 disp('  预计算目标函数和约束条件...');
+
 %% 提前计算好 fai(x,z^) fai(x,z*)和△(z*,z^)，还有约束条件，循环中组装目标函数，再求解
+use_op_cons = [3 5];
+
 fij = cell(N,1);
 fit = cell(N,1);
 fid = cell(N,1);
@@ -110,32 +120,38 @@ end
 phi_x_z = cell(N,1);
 phi_x_z_star = cell(N,1);
 sum_cost = cell(N,1);
+sum_cost_all = cell(N,1);
 
 tic;
-% 计算 fai(x,z)和△(z*,z)，分配好流程变量
-for ind=1:N
+% 计算 phi(x,z)和△(z*,z)，分配好流程变量
+for ii=1:N
     disp('  ==========================');
-    disp(['  预计算样本',num2str(ind),'的训练数据...']);
+    disp(['  预计算样本',num2str(ii),'的训练数据...']);
     % ----------------------------------------- %
-    % 分配各事件流程变量，预先计算好 fai(x,z)和 △(z*,z)
-    [ fij{ind} fit{ind} fid{ind} fiv{ind} fmj{ind} fsj{ind} phi_x_z{ind} sum_cost{ind} ] =...
-        CXSL_Calculate_Fai_And_Loss( s_frame(ind), e_frame(ind) );
+    % 分配各事件流程变量，预先计算好 phi(x,z)和 △(z*,z)
+    [ fij{ii} fit{ii} fid{ii} fiv{ii} fmj{ii} fsj{ii} phi_x_z{ii} sum_cost{ii} sum_cost_all{ii} ] =...
+        CXSL_Calculate_phi_And_Loss( w, s_frame(ii), e_frame(ii) );
     % 计算约束条件 F，调用 CXSL_Calculate_Constraint_New_Conflict 这个函数
     % 与 BundleMethod_Output_Test 中的同名函数一样
     % ----------------------------------------- %
     % 2015.7.6 使用了新的矛盾约束规则（22矛盾约束）
-    [ F{ind} ] = CXSL_Calculate_Constraint_New_Conflict( 'training', true, s_frame(ind), e_frame(ind),...
-        fij{ind}, fit{ind}, fid{ind}, fiv{ind}, fmj{ind}, fsj{ind} );
+    [ F{ii} ] = CXSL_Calculate_Constraint_New_Conflict( 'training', use_op_cons, s_frame(ii), e_frame(ii),...
+        fij{ii}, fit{ii}, fid{ii}, fiv{ii}, fmj{ii}, fsj{ii} );
     % ----------------------------------------- %
-	% 计算标准答案中的fai(x,z*)
-	[ phi_x_z_star{ind} ] = CXSL_Calculate_fai_x_zstar_New( s_frame(ind), e_frame(ind), 'star'); 
+	% 计算标准答案中的phi(x,z*)
+	[ phi_x_z_star{ii} ] = CXSL_Calculate_phi_x_zstar_New( w, s_frame(ii), e_frame(ii), 'star'); 
     % ----------------------------------------- %
 end
 toc;
 
 %% 当当前循环次数t小于上限，且gap不符合要求时，进行循环计算，若想增大精度或轮数，修改gap和iter再允许此cell即可
-
-options = sdpsettings('verbose', 0, 'solver', 'cplex', 'saveduals', 0); % cplex设置放到循环外
+options = sdpsettings('verbose', 0, 'solver', 'gurobi'); % cplex设置放到循环外
+% 定义惩罚项 lambda λ，这个越小，则w越大（收敛速度似乎会加快）
+lambda = 1e-6;
+usecostall = 0;
+if usecostall
+    sum_cost = sum_cost_all;
+end
 
 while t < iter && ls >= gap
 
@@ -181,7 +197,6 @@ while t < iter && ls >= gap
     
     %% 2. 计算 ψ(x,z*,z^)=fai(x,z*)-fai(x,z^) 梯度，求出a和b的值
     % 用 U 来代表这个符号 ψ
-
     for ind=1:N
         % 梯度 论文中fai(x,z*)-fai(x,z^) 但其 bmrm 代码中用的是 fai(x,z^)-fai(x,z*)
         % 按论文方法似乎不收敛，先用代码方案
@@ -210,9 +225,6 @@ while t < iter && ls >= gap
     fprintf('      平均损失函数△(z*,z^):\t%f\n', aver_loss(t));
 
     %% 3. 通过求解方程（14）来更新w（包括一个二次规划问题）
-    
-    % 定义惩罚项 lambda λ，这个越小，则w越大（收敛速度似乎会加快）
-    lambda = 1e-6;
 	% 将更新后的w保存在 W{t+1}中
     [ kexi W{t+1} obj] = CXSL_Update_W_For_BMRM( A, B, lambda );
 
@@ -245,7 +257,8 @@ if gap_cur(t) <= gap
     gap_best = gap_cur(t);      
 else
     disp('  达到最大循环次数，算法终止');
-    t_best = find(aver_loss==min(aver_loss(aver_loss~=0))); %  找到过程中损失最小的那个w作为 w_best
+    t_best = find(aver_loss==min(aver_loss(N+1:end))); %  找到过程中损失最小的那个w作为 w_best
+    t_best = t_best(1);
     w_best = W{t_best};
     gap_best = aver_loss(t_best);
 end
@@ -261,7 +274,7 @@ w_for_excel = w_best';
 plot(aver_loss, '-*');
 % 对得到的收敛曲线进行保存
 if 0
-    name = 'loss_1_65_y';
+    name = 'loss_1_65_1e-6';
     lossdir = [ trackpath, '\训练结果记录\BMRM\'];
     mkdir(lossdir);
     save([lossdir, name, '.mat'], 'aver_loss','sample_loss','w_best','W');

@@ -1,10 +1,10 @@
-function [ cost_for_train PRF COUNT ] = CX_Calculate_Loss( dataset, exist_GT, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj )
+function [ cost_for_train PRF COUNT ] = CX_Calculate_Loss( dataset, addfd, exist_GT, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj )
 
 % 计算精度
 %% 读入数据
 
 [ ~, trackpath ] = getpath( dataset );
-
+% trackpath = 'E:\datasets\first_editon\competition_datasets\N2DL-HeLa\02_4-16_track';
 load([ trackpath, '\Pair\Pre_data_New.mat'], 'n','conflict_pair_last_xy','conflict_pair_next_xy','conflict_fij');
 gt_flow_addr = [ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat'];
 
@@ -183,7 +183,11 @@ fd_FN = fd_Tcount - fd_TP; % 虚景的FN（测试不为虚但实际为虚）
 cost_for_train = (event_FN + fd_FN)/ sum(Tcount); % 类似recall的计算（仅用于SSVM训练时的cost）
 
 % ------------------------ 下面用于计算测试集精度 ------------------------- %
-Preci.all = (event_TP+fd_TP)/(sum(Pcount)+ fd_Pcount);
+if addfd % 选择是否将虚景计算在总精度中
+    Preci.all = (event_TP+fd_TP)/(sum(Pcount)+ fd_Pcount);
+else
+    Preci.all = (event_TP)/(sum(Pcount));
+end
 Preci.move = TP.fij/Pcount(1); % precision=TP/(TP+FP);
 Preci.disappear = TP.fit/Pcount(2);
 Preci.divide = TP.fid/Pcount(3);
@@ -192,7 +196,11 @@ Preci.merge = TP.fmj/Pcount(5);
 Preci.appear = TP.fsj/Pcount(6);
 Preci.false_detection = fd_TP/fd_Pcount;
 
-Recall.all = (event_TP+fd_TP)/(sum(Tcount)+ fd_Tcount);
+if addfd % 选择是否将虚景计算在总精度中
+    Recall.all = (event_TP+fd_TP)/(sum(Tcount)+ fd_Tcount);
+else
+    Recall.all = (event_TP)/(sum(Tcount));
+end
 Recall.move = (TP.fij)/Tcount(1); % recall=TP/(TP+FN)
 Recall.disappear = (TP.fit)/Tcount(2);
 Recall.divide = (TP.fid)/Tcount(3);

@@ -6,7 +6,7 @@
 %
 % ================================================================== %
 
-function [ Fij,Fit,Fid,Fiv,Fsj,Fmj ] = ASLearning( w_best, s_frame, e_frame, Fij,Fit,Fid,Fiv,Fsj,Fmj )
+function [ fij fit fid fiv fmj fsj F ] = ASLearning( s_frame, e_frame )
 
 % Ö¸¶¨²âÊÔÖ¡µÄ·¶Î§
 % s_frame = 1;
@@ -15,7 +15,7 @@ function [ Fij,Fit,Fid,Fiv,Fsj,Fmj ] = ASLearning( w_best, s_frame, e_frame, Fij
 % Ö¸¶¨ÔÚÄÄ¸öÊı¾İ¼¯ÉÏ½øĞĞ¼ÆËã£¨training or competition£©
 dataset = 'competition';
 disp('  ============================');
-disp(['  ¼ÆËã ',num2str(s_frame), '¡ª',num2str(e_frame), ' Ö¡µÄÄ¿±êº¯ÊıºÍÔ¼ÊøÌõ¼ş...']);
+disp(['  ¼ÆËã ',num2str(s_frame), '¡ª',num2str(e_frame), ' Ö¡µÄÔ¼ÊøÌõ¼ş...']);
 % ×é½¨Ä¿±êº¯Êı ×¢Òâ£º²»°üº¬ËğÊ§º¯Êı
 % ----------------------------------------------------------------------- %
 % B·½·¨£ºÏÈ¼ÆËã prob = <w,feature>£¨41s£©ÔÚ¼ÆËã obj = prob.*z£¨1s£©
@@ -24,41 +24,41 @@ disp(['  ¼ÆËã ',num2str(s_frame), '¡ª',num2str(e_frame), ' Ö¡µÄÄ¿±êº¯ÊıºÍÔ¼ÊøÌõ¼
 
 [ fij fit fid fiv fmj fsj ] = CXSL_Assign_FlowVar( dataset, s_frame, e_frame );
 % ´Ë´¦µÄtrue/false¾ö¶¨ÊÇ·ñ¼ÓÈë¿ÉÑ¡Ô¼Êø£¨ÒªÓëÑµÁ·Ê±µÄÑ¡ÔñÒ»ÖÂ£©
-[ F ] = CXSL_Calculate_Constraint_New_Conflict( dataset, [1 2 3 5], s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
+[ F ] = CXSL_Calculate_Constraint_New_Conflict( dataset, [3 5], s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
 % ¼ÆËãÄ¿±êº¯Êı£¨ĞèÒªÔØÈëÖ®Ç°¼ÆËãºÃµÄÌØÕ÷£©
-object_function = CXSL_Calculate_Obj_New( dataset, w_best, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj );
+% object_function = CXSL_Calculate_Obj_New( dataset, w_best, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj );
 
 % ----------------------------------------------------------------------- %
 
 %% ×îÖÕÇó½â
-disp('  ¿ªÊ¼Çó½âILP...');
-% clearvars -except F object_function s_frame e_frame  fij fid fiv fit fsj fmj loss dataset count count_F_false exist_GT;
-% ×¢Òâ£¬Ô­ÏÈ²ÉÓÃÏÈËã³ö fai(x,z) = <feature,z>£¬ÔÚ¼ÆËã obj = <w,fai(x,z)>;
-% ÏÖÔÚ²ÉÓÃÏÈ¼ÆËã <w,feature>£¬ÔÚ¼ÆËã obj = <w,feature>*z£¬ËÙ¶ÈµÃµ½ÁËÃ÷ÏÔÌáÉı
-% µ«ÕâÊÇÕë¶ÔÓÚÒ»´Î¼ÆËã¶øÑÔ£¬Èç¹ûÔÚÑ­»·ÖĞÃ¿´Î¶¼ÒªÕâÃ´¼ÆËãÄ¿±êº¯Êı£¬ËÙ¶È»¹ÊÇÃ»ÓĞÔ­·½·¨¿ì 2015.6.24
-
-options = sdpsettings('verbose',0,'solver','gurobi');
-sol = solvesdp( F, -object_function, options );
-
-if sol.problem == 0
-    for t = s_frame:e_frame-1
-        Fij{t} = round(value(fij{t})) ;
-        Fid{t} = round(value(fid{t})) ;
-        Fiv{t} = round(value(fiv{t})) ;
-        Fit{t} = round(value(fit{t})) ;
-    end
-    for t = s_frame+1:e_frame
-        Fsj{t} = round(value(fsj{t})) ;
-        Fmj{t} = round(value(fmj{t})) ;
-    end
-
-    COST = value(object_function);
-    fprintf('\tcost:\t%.4f\n\n', COST);
-    % ------------------------------------------------------ %
-else
-    sol.info
-    yalmiperror(sol.problem)
-end
+% disp('  ¿ªÊ¼Çó½âILP...');
+% % clearvars -except F object_function s_frame e_frame  fij fid fiv fit fsj fmj loss dataset count count_F_false exist_GT;
+% % ×¢Òâ£¬Ô­ÏÈ²ÉÓÃÏÈËã³ö fai(x,z) = <feature,z>£¬ÔÚ¼ÆËã obj = <w,fai(x,z)>;
+% % ÏÖÔÚ²ÉÓÃÏÈ¼ÆËã <w,feature>£¬ÔÚ¼ÆËã obj = <w,feature>*z£¬ËÙ¶ÈµÃµ½ÁËÃ÷ÏÔÌáÉı
+% % µ«ÕâÊÇÕë¶ÔÓÚÒ»´Î¼ÆËã¶øÑÔ£¬Èç¹ûÔÚÑ­»·ÖĞÃ¿´Î¶¼ÒªÕâÃ´¼ÆËãÄ¿±êº¯Êı£¬ËÙ¶È»¹ÊÇÃ»ÓĞÔ­·½·¨¿ì 2015.6.24
+% 
+% options = sdpsettings('verbose',0,'solver','gurobi');
+% sol = solvesdp( F, -object_function, options );
+% 
+% if sol.problem == 0
+%     for t = s_frame:e_frame-1
+%         Fij{t} = round(value(fij{t})) ;
+%         Fid{t} = round(value(fid{t})) ;
+%         Fiv{t} = round(value(fiv{t})) ;
+%         Fit{t} = round(value(fit{t})) ;
+%     end
+%     for t = s_frame+1:e_frame
+%         Fsj{t} = round(value(fsj{t})) ;
+%         Fmj{t} = round(value(fmj{t})) ;
+%     end
+% 
+%     COST = value(object_function);
+%     fprintf('\tcost:\t%.4f\n\n', COST);
+%     % ------------------------------------------------------ %
+% else
+%     sol.info
+%     yalmiperror(sol.problem)
+% end
 
 
 

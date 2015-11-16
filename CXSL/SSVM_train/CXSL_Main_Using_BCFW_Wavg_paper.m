@@ -27,8 +27,10 @@ if 0
     w = [ wij, wit, wid, wiv, wmj, wsj ]';
 else
 %     w = [ wij,bij, wit,bit, wid,bid, wiv,biv, wmj,bmj, wsj,bsj ]'; % 原版b
-%     w = [ wij,bij, wit,bit+1, wid,bid+1, wiv,biv+1, wmj,bmj+1, wsj,bsj+1 ]';% b+1
-    w = [-18.21315239	2.048551055	0.090611096	-0.07830978	-0.681768441	0.091705287	-0.284558766	0.113666465	-16.77170209	-2.820207584	-1.606735489	-2.170929556	-2.000511632	2.42450433	-4.406444861	10.34098417	1.758814312	-0.819906672	-2.159095585	-4.969572233	1.29607646	0.202318113	3.379177651	-14.25716614	7.109097539	3.366559674	2.10659084	-2.499899814	-3.9849466	2.501397849	1.351917771	4.699879458	-0.525793863	-0.261628668	-4.945586679	-1.846739083	-4.998199696	-0.003648138	1.737582541	-8.35761154]';
+    % 第二个数据集
+%     w = [-18.21315239	2.048551055	0.090611096	-0.07830978	-0.681768441	0.091705287	-0.284558766	0.113666465	-16.77170209	-2.820207584	-1.606735489	-2.170929556	-2.000511632	2.42450433	-4.406444861	10.34098417	1.758814312	-0.819906672	-2.159095585	-4.969572233	1.29607646	0.202318113	3.379177651	-14.25716614	7.109097539	3.366559674	2.10659084	-2.499899814	-3.9849466	2.501397849	1.351917771	4.699879458	-0.525793863	-0.261628668	-4.945586679	-1.846739083	-4.998199696	-0.003648138	1.737582541	-8.35761154]';
+    % 第三个数据集
+    w = [-17.69956928	1.61055833	-0.001787913	0.199592206	-0.287005286	-1.058810184	-0.194715268	0.170821175	-15.86943474	-2.459629861	-1.102503407	-1.233255838	-1.209682446	-2.849135318	-5.932152347	3.635597276	3.112043952	0.905772748	-0.112320949	-0.658275898	4.373948249	0.504445114	-0.211398811	-3.571706443	0	0	0	0	0	0	0	0	0	0	-2.873279295	-0.074622812	-1.438747225	-0.381464188	-2.838608426	-5.896985464]';
 end
 clear wij wit wid wiv wmj wsj;
 % 也可以选择随机的w或全0的w
@@ -38,12 +40,12 @@ if 0
 end
 
 % 定义样本个数 N 和 单个样本中的帧数 frame
-N = 4;
-frame = 15;
+N = 32;
+frame = 2;
 s_frame = zeros(N,1);
 e_frame = zeros(N,1);
 % 目前有gt的帧数，对随机取样有影响
-gt_frame = 60;
+gt_frame = 65;
 
 % 选择取样方式
 % 1为接龙取样，2为滑窗取样，3为随机取样
@@ -79,7 +81,7 @@ end
 % 全部变量最终都被保存下来，局部变量无需保存
 
 % 初始化： 定义A、B、循环次数上限 iter、间隙阈值 gap
-iter = 100;
+iter = 500;
 gap = 0.0010; % 按照 O(1/gap) 的收敛速度，应该在百循环左右完成
 
 %% ============================== 全局变量 =============================== %
@@ -136,6 +138,7 @@ end
 
 phi_x_z = cell(N,1);
 sum_cost = cell(N,1);
+sum_cost_all = cell(N,1);
 phi_x_z_star = cell(N,1);
 
 tic;
@@ -145,7 +148,7 @@ for ii=1:N
     disp(['  预计算样本',num2str(ii),'的训练数据...']);
     % ----------------------------------------- %
     % 分配各事件流程变量，预先计算好 phi(x,z)和 △(z*,z)
-    [ fij{ii} fit{ii} fid{ii} fiv{ii} fmj{ii} fsj{ii} phi_x_z{ii} sum_cost{ii} ] =...
+    [ fij{ii} fit{ii} fid{ii} fiv{ii} fmj{ii} fsj{ii} phi_x_z{ii} sum_cost{ii} sum_cost_all{ii} ] =...
         CXSL_Calculate_phi_And_Loss( w, s_frame(ii), e_frame(ii) );
     % 计算约束条件 F，调用 CXSL_Calculate_Constraint_New_Conflict 这个函数
     % 与 BundleMethod_Output_Test 中的同名函数一样
@@ -163,8 +166,12 @@ toc;
 %% 当当前循环次数t小于上限，且gap不符合要求时，进行循环计算，若想增大精度或轮数，修改gap和iter再运行此cell即可
 % 定义惩罚项 lambda λ
 lambda = 1e-2;
+usecostall = 0;
+if usecostall
+    sum_cost = sum_cost_all;
+end
 
-while t < iter && ls*N >= gap
+while t < iter % && ls*N >= gap
     t = t + 1;
     
     % 记录下每次循环所用的时间
@@ -220,7 +227,7 @@ while t < iter && ls*N >= gap
     Ws = sum_U/(lambda*N);
     ls = sum_delta/N;
     % 计算gap，gap的值随样本、lambda都会变化，无法确定下来，因此还是用loss做gap比较合适
-    linesearch = 0;
+    linesearch = 1;
     if linesearch
         gap_cur(t) = lambda*(Wi{t,ind}- Ws)'*W{t}- Li(t,ind)+ ls;
         gamma(t) = gap_cur(t)/(lambda*norm(Wi{t,ind}- Ws)^2);
@@ -267,7 +274,10 @@ if ls*N <= gap
     gap_best = ls*N;      
 else
     disp('  达到最大循环次数，算法终止');
-    t_best = find(aver_loss==min(aver_loss(aver_loss~=0))); %  找到过程中损失最小的那个w作为 w_best
+    
+    t_best = find(aver_loss==min(aver_loss(N+1:end))) %  找到过程中损失最小的那个w作为 w_best
+    t_best = t_best(t_best>N);
+    t_best = t_best(1);
     w_best = Wavg{t_best};
     gap_best = aver_loss(t_best);
 end
@@ -282,8 +292,8 @@ w_for_excel = w_best';
 plot(aver_loss, '-*');
 % 对得到的收敛曲线进行保存
 if 0
-    name = 'loss_4_15_cons35_costall_initwp_line';
-    lossdir = [ trackpath, '\训练结果记录\BCFWavg_paper\initwp\'];
+    name = 'loss_32_2_cons35_cost1_initwp_line';
+    lossdir = [ trackpath, '\训练结果记录\BCFWavg_paper\initwp\32_2\'];
     mkdir(lossdir);
     save([lossdir, name, '.mat'], 'w','linesearch','use_op_cons','sample_loss','lambda','w_best','Wavg');
     saveas(1, [lossdir, name, '.fig']);

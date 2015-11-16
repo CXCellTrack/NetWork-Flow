@@ -101,7 +101,7 @@ tic
 %% 可选约束1
 %################################################################
 % 针对数据集3（Fluo-N2DH-SIM+）的约束（禁止merge和split事件的发生！）
-if 0
+if 1
     disp('Attention! merge&split event has been canceled！')
     for t = s_frame+1:e_frame
         Fop1 = [ Fop1, sum(fmj{t}(:))<=0 ];
