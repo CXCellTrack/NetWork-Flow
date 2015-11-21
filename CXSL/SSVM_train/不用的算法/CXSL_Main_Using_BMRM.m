@@ -18,50 +18,53 @@ clear;close all;
 
 [ ~, trackpath ] = getpath( 'training' );
 load([ trackpath, '\结构化学习\initial_w_New.mat']);
-% 注意 w 的顺序不能乱
+w = [ wij,bij, wit,bit, wid,bid, wiv,biv, wmj,bmj, wsj,bsj ]'; % 原版b
 if 0
-    w = [ wij, wit, wid, wiv, wmj, wsj ]';
-else
-%     w = [ wij,bij, wit,bit, wid,bid, wiv,biv, wmj,bmj, wsj,bsj ]'; % 原版b
+    % 第一个数据集
+%     w = [-24.05027785	0.965959752	-0.209700235	0.023655542	-0.901444678	0.915527485	-0.723055368	0.78127324	-22.34659216	-3.45491283	-1.682414322	-5.355960441	-2.391659001	2.862181421	-7.382944338	8.382838223	1.94377663	-0.451290137	-1.07738777	-4.844423375	-1.122913059	-0.801496889	3.907101647	-11.61160994	3.710115534	0.998335816	4.252699702	0.790594494	1.207125853	3.799458373	1.390618031	5.18991389	1.129864864	0.673380786	-2.076937813	-1.97433464	-1.980221778	-0.051210814	0.597328997	-3.897482158]';
     % 第二个数据集
 %     w = [-18.21315239	2.048551055	0.090611096	-0.07830978	-0.681768441	0.091705287	-0.284558766	0.113666465	-16.77170209	-2.820207584	-1.606735489	-2.170929556	-2.000511632	2.42450433	-4.406444861	10.34098417	1.758814312	-0.819906672	-2.159095585	-4.969572233	1.29607646	0.202318113	3.379177651	-14.25716614	7.109097539	3.366559674	2.10659084	-2.499899814	-3.9849466	2.501397849	1.351917771	4.699879458	-0.525793863	-0.261628668	-4.945586679	-1.846739083	-4.998199696	-0.003648138	1.737582541	-8.35761154]';
     % 第三个数据集
     w = [-17.69956928	1.61055833	-0.001787913	0.199592206	-0.287005286	-1.058810184	-0.194715268	0.170821175	-15.86943474	-2.459629861	-1.102503407	-1.233255838	-1.209682446	-2.849135318	-5.932152347	3.635597276	3.112043952	0.905772748	-0.112320949	-0.658275898	4.373948249	0.504445114	-0.211398811	-3.571706443	0	0	0	0	0	0	0	0	0	0	-2.873279295	-0.074622812	-1.438747225	-0.381464188	-2.838608426	-5.896985464]';
-end
-clear wij wit wid wiv wmj wsj;
-% 也可以选择随机的w或全0的w
-if 0
+else
     % initial_w是增广的
     w = zeros(numel(w), 1);
 end
 
 % 定义样本个数 N 和 单个样本中的帧数 frame
-N = 1;
-frame = 65;
+N = 5;
+frame = 13;
 s_frame = zeros(N,1);
 e_frame = zeros(N,1);
 % 目前有gt的帧数，对随机取样有影响
 gt_frame = 65;
 
 % 选择取样方式
-% 1为接龙取样，2为滑窗取样，3为随机取样
 sample_method = 1;
 switch sample_method
-    case 1 % 取样方法1：接龙取样
-        % 按 1-5, 6-10, 11-15, 16-20 这样的方法取样本
-        for ind=1:N
-            s_frame(ind) = (ind - 1)*frame + 1;
-            e_frame(ind) = s_frame(ind) + frame - 1;
+    case 1 % 取样方法1：接龙取样（原方法）
+        % 按 1-5, 6-10, 12-15, 16-20 这样的方法取样本
+        for ii=1:N
+            s_frame(ii) = (ii - 1)*frame + 1;
+            e_frame(ii) = s_frame(ii) + frame - 1;
         end
 
-    case 2 % 取样方法2：滑窗取样
+    case 2 % 取样方法2：重叠接龙取样（new sample method）
+        % 按 1-5, 5-10, 10-15, 15-20 这样的方法取样本
+        for ii=1:N
+            s_frame(ii) = (ii - 1)*frame;
+            e_frame(ii) = s_frame(ii) + frame;
+        end
+        s_frame(1) = 1;
+        
+    case 3 % 取样方法3：滑窗取样
         % 按 1-5，2-6，3-7 这样的方法取样本
         for ind=1:N
             s_frame(ind) = ind;
             e_frame(ind) = s_frame(ind) + frame - 1;
         end
        
-    case 3 % 取样方法3：随机取样
+    case 4 % 取样方法4：随机取样
         rng(0);
         s_frame = randi([1 gt_frame-frame+1], [N 1]);
         e_frame = s_frame + frame - 1;        
@@ -74,7 +77,7 @@ for ind=1:N
 end
 
 % 初始化： 定义A、B、循环次数上限 iter、间隙阈值 gap
-iter = 100;
+iter = 50;
 gap = 0.0010; % 按照 O(1/gap) 的收敛速度，应该在百循环左右完成
 
 %% ============================== 全局变量 =============================== %
@@ -145,9 +148,9 @@ end
 toc;
 
 %% 当当前循环次数t小于上限，且gap不符合要求时，进行循环计算，若想增大精度或轮数，修改gap和iter再允许此cell即可
-options = sdpsettings('verbose', 0, 'solver', 'gurobi'); % cplex设置放到循环外
+options = sdpsettings('verbose', 0, 'solver', 'gurobi','cachesolvers',1); % cplex设置放到循环外
 % 定义惩罚项 lambda λ，这个越小，则w越大（收敛速度似乎会加快）
-lambda = 1e-6;
+lambda = 1e-8;
 usecostall = 0;
 if usecostall
     sum_cost = sum_cost_all;
@@ -254,27 +257,27 @@ if gap_cur(t) <= gap
     % 保存最优分配方案和w
     t_best = t;
     w_best = W{t}; % W{t-1}才是取到最佳 gap 值的那个w，随后更新得到的 W{t} gap可能增大了
-    gap_best = gap_cur(t);      
+    loss_best = gap_cur(t);      
 else
     disp('  达到最大循环次数，算法终止');
-    t_best = find(aver_loss==min(aver_loss(N+1:end))); %  找到过程中损失最小的那个w作为 w_best
-    t_best = t_best(1);
+    t_best = find(aver_loss==min(aver_loss(N+1:end))) %  找到过程中损失最小的那个w作为 w_best
+    t_best = t_best(end);
     w_best = W{t_best};
-    gap_best = aver_loss(t_best);
+    loss_best = aver_loss(t_best);
 end
 % 保存最佳w，用于测试其他帧精度
 save([ trackpath, '\结构化学习\SSVM_Best_W_New.mat'], 'w_best');
 
 % fprintf('\tw:\t%f\n', w_best);
 fprintf('\tt_best:\t%d\n', t_best);
-fprintf('\tgap_cur:\t%f\n', gap_best);
+fprintf('\tgap_cur:\t%f\n', loss_best);
 fprintf('\ttime consumption:\t%0.2f min\n', sum(time)/60);   
 w_for_excel = w_best';
 
 plot(aver_loss, '-*');
 % 对得到的收敛曲线进行保存
 if 0
-    name = 'loss_1_65_1e-6';
+    name = 'loss_5_13_initwp_1e-8';
     lossdir = [ trackpath, '\训练结果记录\BMRM\'];
     mkdir(lossdir);
     save([lossdir, name, '.mat'], 'aver_loss','sample_loss','w_best','W');

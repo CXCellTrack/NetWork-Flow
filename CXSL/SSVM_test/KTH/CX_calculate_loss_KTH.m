@@ -15,6 +15,7 @@ load([ trackpath, '\Pair\Pre_data_New.mat']);
 
 last = max(strfind(trackpath, '\'));
 KTH_RES_PATH = [ trackpath(1:last+2), '_KTH_RES\'];
+mkdir(KTH_RES_PATH);
 
 % 计算标准答案中使用过的假说（用来标记假说与KTH细胞的对应关系）
 tic

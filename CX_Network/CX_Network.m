@@ -41,6 +41,8 @@ end
 tolerance = 2.0;
 remove_small = 25; % 移除小物体的阈值可以稍微大一点！
 
+%% 开始循环处理图片 
+
 for frame=1:length(rawpic_dir)
     
     iteration_num = -1;
@@ -49,7 +51,7 @@ for frame=1:length(rawpic_dir)
 
     while strcmp(lunkuo, 'error') % 如果出错则增大滤波次数
         iteration_num = iteration_num + 1;
-        if iteration_num>=4
+        if iteration_num>4
             error('滤波次数达到4次！查看具体情况');
         end
 %         iteration_num = 1;

@@ -253,6 +253,7 @@ Fsj = Fsj_c;
 
 if 1
     disp('保存人工修改过后的GT流程变量');
+    mkdir([ trackpath, '\GT\GT_after_hand_tune']);
     save([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat'],...
         'Fij','Fit','Fid','Fiv','Fmj','Fsj');
 end

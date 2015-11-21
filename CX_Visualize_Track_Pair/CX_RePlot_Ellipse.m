@@ -18,6 +18,7 @@ load([trackpath, '\Pair\Pre_data_new.mat'], 'Ellipse');
 lunkuo_addr = [segpath, '\FOI提取轮廓\'];  % 只需要修改此处
 lunkuo_dir = dir([ lunkuo_addr, '*.tif' ]);
 output_addr = [trackpath, '\新拟合图\'];
+mkdir(output_addr);
 
 frame = numel(Ellipse);
 

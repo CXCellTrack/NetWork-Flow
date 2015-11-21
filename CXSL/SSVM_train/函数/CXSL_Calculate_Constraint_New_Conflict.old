@@ -30,10 +30,9 @@ tic
 %% 约束条件1： 进出守恒
 
 if e_frame - s_frame ~= 1 % 必须在帧数不为2时才有此条件
-    disp('      1)一致性约束……');
     %#############  中间帧的入口出口守恒  ###########
     for t = s_frame+1:e_frame-1
-        disp(['      正在计算第',num2str(t),'帧的进出守恒...']);
+        disp(['正在计算第',num2str(t),'帧的进出守恒...']);
         for j=1:n(t)
             sum_fij = 0;
             sum_fid = 0;
@@ -61,8 +60,7 @@ if e_frame - s_frame ~= 1 % 必须在帧数不为2时才有此条件
 end
 % end if
 
-%#############  2到t帧入口唯一  ###########
-disp('      2)入口约束……');
+%#############  2到最后帧入口唯一  ###########
 for t = s_frame+1:e_frame
     for j=1:n(t)
         sum_fid = 0;
@@ -83,18 +81,16 @@ for t = s_frame+1:e_frame
     end
 end
 
-%### 1到t-1帧出口唯一（在一致性约束存在时，可简化为：第一帧出口唯一）  ###%
-disp('      3)出口约束……');
-for t=s_frame%:e_frame-1
-    for j=1:n(t)
-        sum_fmj = 0;
-        % sum_fmj 为所有包含 j 的融合 pair 的 fmj 之和
-        for ind=1:numel(conflict_pair_last_xy{t}{j})/2
-            sum_fmj = sum_fmj + fmj{t+1}( conflict_pair_last_xy{t}{j}(ind,1), conflict_pair_last_xy{t}{j}(ind,2) );
-        end
-        % 出口最多有一条   迁移出去        消失        母细胞        下一帧split        下一帧融合
-        F2 = [ F2, sum(fij{t}(j,:)) + fit{t}(j) + sum(fid{t}(j,:)) + sum(fiv{t}(j,:)) + sum_fmj <= 1 ];
+%#############  第一帧出口唯一  ###########
+t = s_frame;
+for j=1:n(t)
+    sum_fmj = 0;
+    % sum_fmj 为所有包含 j 的融合 pair 的 fmj 之和
+    for ind=1:numel(conflict_pair_last_xy{t}{j})/2
+        sum_fmj = sum_fmj + fmj{t+1}( conflict_pair_last_xy{t}{j}(ind,1), conflict_pair_last_xy{t}{j}(ind,2) );
     end
+    % 出口最多有一条   迁移出去        消失        母细胞        下一帧split        下一帧融合
+    F2 = [ F2, sum(fij{t}(j,:)) + fit{t}(j) + sum(fid{t}(j,:)) + sum(fiv{t}(j,:)) + sum_fmj <= 1 ];
 end
 
 toc;
@@ -105,7 +101,7 @@ tic
 %% 可选约束1
 %################################################################
 % 针对数据集3（Fluo-N2DH-SIM+）的约束（禁止merge和split事件的发生！）
-if ~isempty(strfind(trackpath,'SIM+'))
+if 0
     disp('Attention! merge&split event has been canceled！')
     for t = s_frame+1:e_frame
         Fop1 = [ Fop1, sum(fmj{t}(:))<=0 ];

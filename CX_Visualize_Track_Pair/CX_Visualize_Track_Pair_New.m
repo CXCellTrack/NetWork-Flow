@@ -21,16 +21,17 @@ end
 load([trackpath, '\Pair\Pre_data_New.mat']);
 fig_addr = [trackpath, '\新拟合图\'];
  
-if 0
+if 1
     disp('  载入真实流程变量数据...');
-    load([trackpath, '\GT\GT_Flow_Variables_New.mat']);
-    output_addr = [trackpath, '\GT\'];
+    load([trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
+    output_addr = [trackpath, '\GT\GT_after_hand_tune\'];
     s_frame = 1;
     e_frame = numel(Fmj);
 else
     disp('  载入经过SSVM learing后得到的分配方案');
     track_data_addr = [trackpath, '\结构化学习\Tracking_Data.mat'];
     output_addr = [trackpath, '\Pair\可视化跟踪标记\'];
+    mkdir(output_addr)
     load( track_data_addr );
     % 根据载入的流程变量计算 s_frame 和 e_frame
     s_frame = sum(cellfun(@isempty, Fsj));

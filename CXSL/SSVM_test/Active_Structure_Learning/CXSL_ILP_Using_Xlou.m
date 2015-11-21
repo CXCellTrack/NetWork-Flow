@@ -13,7 +13,7 @@ dataset = 'competition';
 [ ~, trackpath ] = getpath( dataset );
 [ ~, traintrackpath ] = getpath( 'training' );
 
-%% 调用cplex进行22求解
+%% 先求出22之间的约束
 load([ trackpath, '\Pair\Pre_data_New.mat'], 'n');
 frame = numel(n);
 
@@ -48,8 +48,9 @@ if 0
 else % 想要复现 excel 中记载的以前的实验结果，只需要手动填写 w_best 即可
     disp('  载入手动填写的w...');
     % 注意！只能用2帧长度样本的训练结果来测试这个！
-    thisfile = 'BCFWavg_my\initwp\32_2\loss_32_2_cons35_cost1_initwp_line_b.mat';
-    load([ traintrackpath, '\训练结果记录\', thisfile ], 'w_best');
+    thisfile = 'BCFWavg_paper\withgap\64_2\loss_64_2_cons35_cost1_init0p_line_rng.mat';
+    load([ traintrackpath, '\训练结果记录\', thisfile ], 'w_best','Wavg');
+%     w_best = Wavg{1792};
 end
 
 options = sdpsettings('verbose',0,'solver','gurobi');

@@ -24,6 +24,7 @@ pre_data_addr = [ trackpath, '\Pair\Pre_data_New.mat'];
 last = max(strfind(trackpath, '\'));
 rawpic_addr = trackpath(1:last+2);  % 需要给出原始图片的地址
 % 原始维度特征
+mkdir([trackpath, '\结构化学习']);
 Feature_New_addr = [ trackpath, '\结构化学习\Feature_New.mat'];
 % 增广特征
 Feature_Plus_New_addr = [ trackpath, '\结构化学习\Feature_Plus_New.mat']; 

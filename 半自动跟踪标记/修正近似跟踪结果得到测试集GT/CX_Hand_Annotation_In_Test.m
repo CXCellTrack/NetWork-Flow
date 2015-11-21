@@ -40,6 +40,7 @@ frame = numel(colored_fig_dir);
 % 定义全局变量 GT_delete 存储当前标记中需要要被删去的事件
 global GT_move GT_delete global_x t;
 
+mkdir([ trackpath, '\GT']);
 handGt = [ trackpath, '\GT\Hand_GT_New.mat'];
 if exist(handGt, 'file')
     load( handGt );
@@ -52,7 +53,7 @@ else
 end
 
 
-for t = 66:67%frame-1 % 2015.10.4将hela1训练集的前80帧标记完毕
+for t = 1:frame-1 % 2015.10.4将hela1训练集的前80帧标记完毕
 
     % 先清空这2个，防止后续修改时出错
     GT_move{t} = zeros(50,4); % 预留20行应该够用的

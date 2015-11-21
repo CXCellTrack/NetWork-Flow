@@ -22,6 +22,7 @@ end
 % 读入CX-Network 处理之后产生的初始椭圆数据
 
 [ segpath trackpath ] = getpath( dataset );
+mkdir(trackpath);
 
 raw_ellipse_path = [segpath, '\FOI拟合图2.0\raw_ellipse.mat'];
 load( raw_ellipse_path );
@@ -221,6 +222,7 @@ toc;
 %% 保存数据到 Pre_data.mat 中
 if 1
     disp('  将数据保存在Pair目录下的Pre_data_New中');
+    mkdir([trackpath,'\Pair']);
     save([trackpath,'\Pair\Pre_data_New.mat'], 'Ellipse', 'candidate_k_last',...
         'candidate_k_next', 'conflict_pair_last_xy', 'conflict_pair_next_xy', 'n', 'num_var', 'num_var_sum',...
         'candidate_fij', 'conflict_fij');

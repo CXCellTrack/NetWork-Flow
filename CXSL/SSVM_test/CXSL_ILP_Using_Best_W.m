@@ -47,9 +47,9 @@ if 1
         load([ traintrackpath, '\结构化学习\SSVM_Best_W_New.mat']);
     else % 想要复现 excel 中记载的以前的实验结果，只需要手动填写 w_best 即可
         disp('  载入手动填写的w...');
-        thisfile = 'BMRM\loss_1_65_1e-6.mat';
+        thisfile = 'BMRM\loss_5_13_initwp_1e-8.mat';
         load([ traintrackpath, '\训练结果记录\', thisfile ], 'w_best','use_op_cons','Wavg');
-%         w_best = Wavg{148};
+%         w_best = Wavg{394};
 %         if ~isequal(use_op_cons, use_op_cons_test)
 %             error('测试所用的可选约束和训练不一致！');
 %         end
@@ -60,6 +60,8 @@ else
     load([ traintrackpath, '\结构化学习\initial_w_New.mat']);
     % 加偏置
     w_best = [ wij,bij, wit,bit, wid,bid, wiv,biv, wmj,bmj, wsj,bsj ]';
+    % 第一个数据集
+%     w = [-24.05027785	0.965959752	-0.209700235	0.023655542	-0.901444678	0.915527485	-0.723055368	0.78127324	-22.34659216	-3.45491283	-1.682414322	-5.355960441	-2.391659001	2.862181421	-7.382944338	8.382838223	1.94377663	-0.451290137	-1.07738777	-4.844423375	-1.122913059	-0.801496889	3.907101647	-11.61160994	3.710115534	0.998335816	4.252699702	0.790594494	1.207125853	3.799458373	1.390618031	5.18991389	1.129864864	0.673380786	-2.076937813	-1.97433464	-1.980221778	-0.051210814	0.597328997	-3.897482158]';
     % 第二个数据集
 %     w_best = [-18.21315239	2.048551055	0.090611096	-0.07830978	-0.681768441	0.091705287	-0.284558766	0.113666465	-16.77170209	-2.820207584	-1.606735489	-2.170929556	-2.000511632	2.42450433	-4.406444861	10.34098417	1.758814312	-0.819906672	-2.159095585	-4.969572233	1.29607646	0.202318113	3.379177651	-14.25716614	7.109097539	3.366559674	2.10659084	-2.499899814	-3.9849466	2.501397849	1.351917771	4.699879458	-0.525793863	-0.261628668	-4.945586679	-1.846739083	-4.998199696	-0.003648138	1.737582541	-8.35761154]';
     % 第三个数据集
@@ -103,10 +105,10 @@ for t = s_frame+1:e_frame
 end
 
 COST = value(object_function);
-fprintf('\tcost:\t%.4f\n\n', COST);
+fprintf('\tcost:\t%.4f\n\n', COST); % save([trackpath, '\结构化学习\Tracking_Data.mat'], 'Fij','Fid','Fiv','Fit','Fmj','Fsj');
 
 %% 调用函数计算精度（假说精度）
-addfd = 1; % 选择是否将虚景计算在总精度中
+addfd = 0; % 选择是否将虚景计算在总精度中
 [ ~, PRF, COUNT ] = CX_Calculate_Loss( dataset, addfd, exist_GT, s_frame, e_frame, Fij, Fit, Fid, Fiv, Fmj, Fsj );
 
 if isa(PRF, 'struct')
@@ -128,7 +130,7 @@ if 0
     if exist('thisfile', 'var')
         matpath = [trackpath, '\测试结果记录\',strrep(thisfile, 'loss_', '')];
     else
-        matpath = [trackpath, '\测试结果记录\local.mat'];
+        matpath = [trackpath, '\测试结果记录\???.mat'];
     end
     save(matpath, 'PRF','COUNT','Fij','Fit','Fid','Fiv','Fmj','Fsj'); % 注意修改mat名称
     file = fopen(strrep(matpath,'mat','txt'), 'w'); fclose(file);
