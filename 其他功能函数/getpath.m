@@ -15,8 +15,8 @@ end
 [status2, result2] = system(['set ', trackpath]); 
 
 if ~status1 && ~status2
-    segpath = mydeblank( result1((2+numel(segpath)):end) );
-    trackpath = mydeblank( result2((2+numel(trackpath)):end) );
+    segpath = deblank( result1((2+numel(segpath)):end) );
+    trackpath = deblank( result2((2+numel(trackpath)):end) );
 else
     error(['没有找到环境变量',segpath,'和',trackpath]);
 end

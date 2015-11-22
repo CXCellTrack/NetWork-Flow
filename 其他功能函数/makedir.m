@@ -13,7 +13,6 @@ path{5} = [ trackpath, '\Pair\可视化跟踪标记'];
 path{6} = [ trackpath, '\结构化学习'];
 path{7} = [ trackpath, '\新拟合图'];
 path{8} = [ trackpath, '\训练结果记录'];
-path{9} = [ trackpath, '\训练结果记录\BCFWavg_New'];
 
 for i=1:numel(path)
     mkdir(path{i});
@@ -31,7 +30,6 @@ path{5} = [ trackpath, '\Pair\可视化跟踪标记'];
 path{6} = [ trackpath, '\结构化学习'];
 path{7} = [ trackpath, '\新拟合图'];
 path{8} = [ trackpath, '\测试结果记录'];
-path{9} = [ trackpath, '\测试结果记录\BCFWavg_New'];
 
 
 for i=1:numel(path)

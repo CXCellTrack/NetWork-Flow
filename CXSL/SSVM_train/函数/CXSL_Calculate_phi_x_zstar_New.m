@@ -5,6 +5,10 @@ function [ fai_x_z ] = CXSL_Calculate_phi_x_zstar_New( w, s_frame, e_frame, str)
 % 也可以计算 fai(x,z^) 但 fai(x,z^) 可以由ILP中的结果 value 出来，因此无需重复计算
 % ============================= %
 
+if isempty(w) % 若没有输入w则默认为带b的0
+    w = zeros(40,1);
+end
+
 dataset = 'training';
 [ ~, trackpath ] = getpath( dataset );
 % 载入特征

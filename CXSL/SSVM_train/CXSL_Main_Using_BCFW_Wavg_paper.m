@@ -30,12 +30,12 @@ else
 end
 
 % 定义样本个数 N 和 单个样本中的帧数 frame
-N = 5;
-frame = 13;
+N = 4;
+frame = 20;
 s_frame = zeros(N,1);
 e_frame = zeros(N,1);
 % 目前有gt的帧数，对随机取样有影响
-gt_frame = 65;
+gt_frame = 80;
 
 % 选择取样方式
 sample_method = 1;
@@ -138,7 +138,6 @@ sum_cost = cell(N,1);
 sum_cost_all = cell(N,1);
 phi_x_z_star = cell(N,1);
 
-tic;
 % 计算 phi(x,z)和△(z*,z)，分配好流程变量
 for ii=1:N
     disp('  ==========================');
@@ -158,7 +157,6 @@ for ii=1:N
 	[ phi_x_z_star{ii} ] = CXSL_Calculate_phi_x_zstar_New( w, s_frame(ii), e_frame(ii), 'star'); 
     % ----------------------------------------- %
 end
-toc;
 
 %% 当当前循环次数t小于上限，且gap不符合要求时，进行循环计算，若想增大精度或轮数，修改gap和iter再运行此cell即可
 % 定义惩罚项 lambda λ

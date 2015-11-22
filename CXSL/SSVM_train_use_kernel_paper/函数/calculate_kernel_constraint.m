@@ -4,7 +4,7 @@ fij_ind, fit_ind, fid_ind, fiv_ind, fmj_ind, fsj_ind )
 [ ~, trackpath ] = getpath( 'training' );
 load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']); % 载入标准答案
 
-Fkernel_ind = 0;
+Fkernel_ind = [];
 ev = 3;
 if ~islinear(ev)
     

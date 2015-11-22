@@ -1,4 +1,4 @@
-function [ fij fit fid fiv fmj fsj phi_x_z cost_for_train ] = CXSL_Calculate_Event_Fai_And_Loss( s_frame, e_frame )
+function [ fij fit fid fiv fmj fsj phi_x_z cost_for_train cost_for_train_all ] = CXSL_Calculate_Event_Fai_And_Loss( s_frame, e_frame )
 
 %
 % 在给定 w 的情况下，生成变量矩阵和目标函数
@@ -14,7 +14,7 @@ dataset = 'training'; % 这个函数也只在训练中使用
 
 load([ trackpath, '\Pair\Pre_data_New.mat'], 'n','conflict_pair_last_xy','conflict_pair_next_xy','conflict_fij');
 % 载入特征
-load([ trackpath, '\结构化学习\Feature_New.mat']);
+load([ trackpath, '\结构化学习\Feature_Plus_New.mat']);
 % 载入标准答案GT
 load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
 
@@ -59,20 +59,20 @@ fai_fsj = 0;
 % tic;
 for t = s_frame:e_frame-1
     % 去掉sum后之间相加速度更快 由 2.9168s 到 2.82s
-    fai_fij = fai_fij + cell_dot_mutil( feature_fij{t}, fij{t} );
+    fai_fij = fai_fij + cell_dot_mutil( feature_fij_p{t}, fij{t} );
 
-    fai_fit = fai_fit + cell_dot_mutil( feature_fit{t}, fit{t} );
+    fai_fit = fai_fit + cell_dot_mutil( feature_fit_p{t}, fit{t} );
 
-    fai_fid = fai_fid + cell_dot_mutil( feature_fid{t}, fid{t} );
+    fai_fid = fai_fid + cell_dot_mutil( feature_fid_p{t}, fid{t} );
 
-    fai_fiv = fai_fiv + cell_dot_mutil( feature_fiv{t}, fiv{t} );
+    fai_fiv = fai_fiv + cell_dot_mutil( feature_fiv_p{t}, fiv{t} );
 end
 % toc;
 for t = s_frame+1:e_frame
     
-    fai_fmj = fai_fmj + cell_dot_mutil( feature_fmj{t}, fmj{t} );
+    fai_fmj = fai_fmj + cell_dot_mutil( feature_fmj_p{t}, fmj{t} );
 
-    fai_fsj = fai_fsj + cell_dot_mutil( feature_fsj{t}, fsj{t} );
+    fai_fsj = fai_fsj + cell_dot_mutil( feature_fsj_p{t}, fsj{t} );
 end
 
 % 将所有的 fai_f 组合成列向量（增广向量）
@@ -237,7 +237,7 @@ end
 
 event_FN = sum(Tcount) - event_TP; % 细胞事件的FN（测试没发生但实际发生了）
 fd_FN = fd_Tcount - fd_TP; % 虚景的FN（测试不为虚但实际为虚）
-% cost_for_train = (event_FN + fd_FN)/ sum(Tcount); % 类似recall的计算（仅用于SSVM训练时的cost）
+cost_for_train_all = (event_FN + fd_FN)/ sum(Tcount); % 类似recall的计算（仅用于SSVM训练时的cost）
 cost_for_train = event_FN/ sum(Tcount);
 
 end

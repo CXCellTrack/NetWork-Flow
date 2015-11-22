@@ -35,20 +35,16 @@ disp('分配流程变量...');tic
 [ fij fit fid fiv fmj fsj ] = CXSL_Assign_FlowVar( dataset, s_frame, e_frame );
 toc;disp('计算约束条件...');
 % 此处的true/false决定是否加入可选约束（要与训练时的选择一致）
-[ F ] = CXSL_Calculate_Constraint_New_Conflict( dataset, true, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
+use_op_cons = [3 5];
+[ F ] = CXSL_Calculate_Constraint_New_Conflict( dataset, use_op_cons, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
 % 计算目标函数（需要载入之前计算好的特征）
 
 %% 组建目标函数
 [ ~, traintrackpath ] = getpath( 'training' );
-if 1
-    disp('  载入上一次 SSVM 训练得到的w(线性核) & y^,y*,aplha（非线性核）...');
-    load([ traintrackpath, '\结构化学习\SSVM_Best_W_New.mat']);
-else
-    disp('  载入之前 SSVM 训练保存数据...'); 
-    name = 'loss_5_13_y';
-    lossdir = [ traintrackpath, '\训练结果记录\BCFW_paper_hunhe\'];
-    load([lossdir, name, '.mat']);
-end
+
+disp('  载入之前 SSVM 训练保存数据...'); 
+thisfile = '\核记录\loss_5_13_initwp_line.mat';
+load([ traintrackpath, '\训练结果记录\', thisfile]);
 
 disp('组建目标函数...');tic
 object_function = CXSL_Calculate_Obj_hunhe_paper( dataset, s_frame, e_frame,...
@@ -58,12 +54,11 @@ toc
 
 %% 最终求解
 disp('  开始求解ILP...');
-clearvars -except F object_function s_frame e_frame  fij fid fiv fit fsj fmj loss dataset count count_F_false exist_GT trackpath;
+clearvars -except F object_function s_frame e_frame  fij fid fiv fit fsj fmj loss dataset count count_F_false exist_GT trackpath thisfile;
 % 注意，原先采用先算出 fai(x,z) = <feature,z>，在计算 obj = <w,fai(x,z)>;
 % 现在采用先计算 <w,feature>，在计算 obj = <w,feature>*z，速度得到了明显提升
 % 但这是针对于一次计算而言，如果在循环中每次都要这么计算目标函数，速度还是没有原方法快 2015.6.24
-% options = sdpsettings('verbose',0,'solver','gurobi');
-options = sdpsettings('verbose',0,'solver','cplex','saveduals',0);
+options = sdpsettings('verbose',0,'solver','gurobi');
 sol = solvesdp( F, -object_function, options )
 
 Fij = cell(e_frame-1,1);
@@ -91,8 +86,9 @@ end
 COST = value(object_function);
 fprintf('\tcost:\t%.4f\n\n', COST);
 
-% 调用函数计算精度（假说精度）
-[ ~, PRF, COUNT ] = CX_Calculate_Loss( dataset, exist_GT, s_frame, e_frame, Fij, Fit, Fid, Fiv, Fmj, Fsj );
+%% 调用函数计算精度（假说精度）
+addfd = 0; % 选择是否将虚景计算在总精度中
+[ ~, PRF, COUNT ] = CX_Calculate_Loss( dataset, addfd, exist_GT, s_frame, e_frame, Fij, Fit, Fid, Fiv, Fmj, Fsj );
 
 if isa(PRF, 'struct')
     
@@ -108,14 +104,15 @@ if isa(PRF, 'struct')
 end
 % ------------------------------------------------------ %
 
-
-% 保存得到的流量变量结果到 track_data 中，供后续画图用（通常不要保存！）
+%% 保存得到的流量变量结果到 track_data 中，供后续画图用（通常不要保存！）
 if 0
-    txtpath = [trackpath, '\测试结果记录\BCFW_paper_hunhe\5_13_y.txt'];
-    file = fopen(txtpath, 'w'); fclose(file);
-    save(strrep(txtpath,'txt','mat'), 'PRF','COUNT','Fij','Fit','Fid','Fiv','Fmj','Fsj'); % 注意修改mat名称
-    
-%     save([ trackpath, '\结构化学习\Tracking_Data.mat'], 'Fij','Fid','Fiv','Fit','Fsj','Fmj');
+    if exist('thisfile', 'var')
+        matpath = [trackpath, '\测试结果记录\',strrep(thisfile, 'loss_', '')];
+    else
+        matpath = [trackpath, '\测试结果记录\???.mat'];
+    end
+    save(matpath, 'PRF','COUNT','Fij','Fit','Fid','Fiv','Fmj','Fsj'); % 注意修改mat名称
+    file = fopen(strrep(matpath,'mat','txt'), 'w'); fclose(file);
 end
 
 

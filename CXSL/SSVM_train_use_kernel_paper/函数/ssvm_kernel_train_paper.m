@@ -1,73 +1,53 @@
-function YKY = ssvm_kernel_train_paper(y_ev, alpha_ev, Kernel_ev, ev, N, ind_train, s_frame, e_frame,...
-                                        fij, fit, fid, fiv, fmj, fsj)    
+function [ Y_start_K_Y Y_hat_K_Y ] = ssvm_kernel_train_paper(y_ev, alpha_ev, Kernel_ev, ev, N, ind_train, s_frame, e_frame,...
+    fij, fit, fid, fiv, fmj, fsj)
 
-% 设置一个bool变量use_star来指示是y*还是yi                         
-use_star = false;                              
-if isempty(y_ev)&&isempty(alpha_ev)
-    use_star = true;
-end
     
 [ ~, trackpath ] = getpath( 'training' );
 load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']); % 载入标准答案
 y_star = cell(N,1); % y*
 switch ev % 根据事件选择feature和流程变量
     case 1
-        if use_star
-            for ind=1:N
-                y_star{ind} = Fij(s_frame(ind):e_frame(ind)-1);
-            end
+        for ind=1:N
+            y_star{ind} = Fij(s_frame(ind):e_frame(ind)-1);
         end
         y_train = fij{ind_train}(s_frame(ind_train):e_frame(ind_train)-1);
     case 2
-        if use_star
-            for ind=1:N
-                y_star{ind} = Fit(s_frame(ind):e_frame(ind)-1);
-            end
+        for ind=1:N
+            y_star{ind} = Fit(s_frame(ind):e_frame(ind)-1);
         end
         y_train = fit{ind_train}(s_frame(ind_train):e_frame(ind_train)-1);
     case 3
-        if use_star
-            for ind=1:N
-                y_star{ind} = Fid(s_frame(ind):e_frame(ind)-1);
-            end
+        for ind=1:N
+            y_star{ind} = Fid(s_frame(ind):e_frame(ind)-1);
         end
         y_train = fid{ind_train}(s_frame(ind_train):e_frame(ind_train)-1);
     case 4
-        if use_star
-            for ind=1:N
-                y_star{ind} = Fiv(s_frame(ind):e_frame(ind)-1);
-            end
+        for ind=1:N
+            y_star{ind} = Fiv(s_frame(ind):e_frame(ind)-1);
         end
         y_train = fiv{ind_train}(s_frame(ind_train):e_frame(ind_train)-1);
     case 5
-        if use_star
-            for ind=1:N
-                y_star{ind} = Fmj(s_frame(ind)+1:e_frame(ind));
-            end
+        for ind=1:N
+            y_star{ind} = Fmj(s_frame(ind)+1:e_frame(ind));
         end
         y_train = fmj{ind_train}(s_frame(ind_train)+1:e_frame(ind_train)); 
     case 6
-        if use_star
-            for ind=1:N
-                y_star{ind} = Fsj(s_frame(ind)+1:e_frame(ind));
-            end
+        for ind=1:N
+            y_star{ind} = Fsj(s_frame(ind)+1:e_frame(ind));
         end
         y_train = fsj{ind_train}(s_frame(ind_train)+1:e_frame(ind_train));
 end
-    
-if use_star
-    % 计算ystar*K*y
-    YKY = cal_Ystar_K_Y(y_star, y_train, Kernel_ev, ev, N, ind_train, s_frame, e_frame);
-else
-    % 计算yi*K*y
-    YKY = cal_Yhat_K_Y(y_ev, alpha_ev, y_train, Kernel_ev, ev, N, ind_train, s_frame, e_frame);
-end
-
-
+  
+% 计算ystar*K*y
+Y_start_K_Y = cal_Ystar_K_Y(y_star, y_train, [Kernel_ev], ev, N, ind_train, s_frame, e_frame);
+% 计算yi*K*y
+Y_hat_K_Y = cal_Yhat_K_Y(y_ev, alpha_ev, y_train, [Kernel_ev], ev, N, ind_train, s_frame, e_frame);
 
 
 %% 计算 k(phi*,phi) 等同于 Ystar*K*Y
 function Y_star_K_Y = cal_Ystar_K_Y(y_star, y_train, Kernel_ev, ev, N, ind_train, s_frame, e_frame)
+
+% global Kernel_ev;
 
 Y_star_K_Y = 0;
 for ind=1:N
@@ -100,13 +80,15 @@ for ind=1:N
             yKy(ii,jj) = tmpy1*tmpK*tmpy2;
         end
     end
-    % 这个和还要*该样本中支持向量的个数
+    % 这个和还要*该样本中支持向量的个数(y* 由于alpha和为1，就不用乘了)
     Y_star_K_Y = Y_star_K_Y + sum(yKy(:));
 end
 % 求<f*, f>无需*alpha，因为alpha和一定为1
 
 %% 计算 k(phi^,phi) 等同于 Yi*K*Y
 function Y_i_K_Y = cal_Yhat_K_Y(y_ev, alpha_ev, y_train, Kernel_ev, ev, N, ind_train, s_frame, e_frame)
+
+% global Kernel_ev;
 
 Y_i_K_Y = 0;
 for ind=1:N

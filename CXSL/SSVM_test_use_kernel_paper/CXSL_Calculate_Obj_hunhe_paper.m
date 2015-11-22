@@ -12,7 +12,7 @@ function object_function = CXSL_Calculate_Obj_hunhe_paper( dataset, s_frame, e_f
 % ----------------------------------------------------------------------- %
 % 载入特征
 [ ~, trackpath ] = getpath( dataset );
-load([ trackpath, '\结构化学习\Feature_New.mat']);
+load([ trackpath, '\结构化学习\Feature_Plus_New.mat']);
 % ----------------------------------------------------------------------- %
 
 obj_ij = 0;
@@ -26,7 +26,7 @@ for tt=s_frame:e_frame-1
     %% ------------------------- fij -------------------------- %
     ev = 1;
     if islinear(ev)
-        mat_fij = cellfun(@(x)dot(w_best{ev},x), feature_fij{tt});
+        mat_fij = cellfun(@(x)dot(w_best{ev},x), feature_fij_p{tt});
         obj_ij = obj_ij + sum(sum( mat_fij.*fij{tt} ));
     end
     % ------------------------------------------------------- %
@@ -34,7 +34,7 @@ for tt=s_frame:e_frame-1
     %% ------------------------- fit -------------------------- %
     ev = 2;
     if islinear(ev)
-        mat_fit = cellfun(@(x)dot(w_best{ev},x), feature_fit{tt});
+        mat_fit = cellfun(@(x)dot(w_best{ev},x), feature_fit_p{tt});
         obj_it = obj_it + sum(sum( mat_fit.*fit{tt} ));
     end
     % ------------------------------------------------------- %
@@ -42,7 +42,7 @@ for tt=s_frame:e_frame-1
     %% ------------------------- fid -------------------------- %
     ev = 3;
     if islinear(ev)
-        mat_fid = cellfun(@(x)dot(w_best{ev},x), feature_fid{tt});
+        mat_fid = cellfun(@(x)dot(w_best{ev},x), feature_fid_p{tt});
         obj_id = obj_id + sum(sum( mat_fid.*fid{tt} ));
     end
     % ------------------------------------------------------- %
@@ -50,7 +50,7 @@ for tt=s_frame:e_frame-1
     %% ------------------------- fiv -------------------------- %
     ev = 4;
     if islinear(ev)
-        mat_fiv = cellfun(@(x)dot(w_best{ev},x), feature_fiv{tt});
+        mat_fiv = cellfun(@(x)dot(w_best{ev},x), feature_fiv_p{tt});
         obj_iv = obj_iv + sum(sum( mat_fiv.*fiv{tt} ));
     end    
     % ------------------------------------------------------- %
@@ -60,7 +60,7 @@ for tt=s_frame+1:e_frame
     %% ------------------------- fmj -------------------------- %
     ev = 5;
     if islinear(ev)
-        mat_fmj = cellfun(@(x)dot(w_best{ev},x), feature_fmj{tt});
+        mat_fmj = cellfun(@(x)dot(w_best{ev},x), feature_fmj_p{tt});
         obj_mj = obj_mj + sum(sum( mat_fmj.*fmj{tt} ));
     end    
     % ------------------------------------------------------- %
@@ -68,7 +68,7 @@ for tt=s_frame+1:e_frame
     %% ------------------------- fsj -------------------------- %
     ev = 6;
     if islinear(ev)
-        mat_fsj = cellfun(@(x)dot(w_best{ev},x), feature_fsj{tt});
+        mat_fsj = cellfun(@(x)dot(w_best{ev},x), feature_fsj_p{tt});
         obj_sj = obj_sj + sum(sum( mat_fsj.*fsj{tt} ));
     end    
     % ------------------------------------------------------- %
@@ -107,7 +107,7 @@ for ev=1:6
                                 continue;
                             end
                             for jj=1:numel(y2)
-                                K_mat(kk,jj) = svm_kernel(feature1{tt1}{kk}, feature_fid{tt2}{jj}, kernel_type{ev}, cmd{ev});
+                                K_mat(kk,jj) = svm_kernel(feature1{tt1}{kk}, feature_fid_p{tt2}{jj}, kernel_type{ev}, cmd{ev});
                             end
                         end
                         
