@@ -20,20 +20,34 @@ clear;close all;
 load([ trackpath, '\结构化学习\initial_w_New.mat']);
 % 注意 w 的顺序不能乱
 w = cell(1,6); % 将w也分事件
-% w{1} = [wij,bij]'; % 采用svm得到的w
-% w{2} = [wit,bit]';
-% w{3} = [wid,bid]';
-% w{4} = [wiv,biv]';
-% w{5} = [wmj,bmj]';
-% w{6} = [wsj,bsj]';
-w{1} = wij'; % 采用svm得到的w
-w{2} = wit';
-w{3} = wid';
-w{4} = wiv';
-w{5} = wmj';
-w{6} = wsj';
+if exist('bij','var')
+    w{1} = [wij,bij]'; % 采用svm得到的w
+    w{2} = [wit,bit]';
+    w{3} = [wid,bid]';
+    w{4} = [wiv,biv]';
+    w{5} = [wmj,bmj]';
+    w{6} = [wsj,bsj]';
+else
+    w{1} = wij'; % 采用svm得到的w
+    w{2} = wit';
+    w{3} = wid';
+    w{4} = wiv';
+    w{5} = wmj';
+    w{6} = wsj';
+end
 
-if 0 % 使用全0w
+if 1 
+    % 第三个数据集（之前的w）
+    w_fore = [-17.69956928	1.61055833	-0.001787913	0.199592206	-0.287005286	-1.058810184	-0.194715268	0.170821175	-15.86943474	-2.459629861	-1.102503407	-1.233255838	-1.209682446	-2.849135318	-5.932152347	3.635597276	3.112043952	0.905772748	-0.112320949	-0.658275898	4.373948249	0.504445114	-0.211398811	-3.571706443	0	0	0	0	0	0	0	0	0	0	-2.873279295	-0.074622812	-1.438747225	-0.381464188	-2.838608426	-5.896985464]';
+
+    w{1} = w_fore( 1:9 ); 
+    w{2} = w_fore( 10:15 );
+    w{3} = w_fore( 16:24 );
+    w{4} = w_fore( 25:29 );
+    w{5} = w_fore( 30:34 );
+    w{6} = w_fore( 35:40 );
+else
+    % 使用全0w
     w{1} = zeros(size(w{1}));
     w{2} = zeros(size(w{2}));
     w{3} = zeros(size(w{3}));
@@ -227,7 +241,7 @@ end
 %% 最耗时的步骤在这里！！！计算所有特征间的核
 use_distrabute = 0;
 if ~use_distrabute
-    kernel_path = [trackpath, '\核训练\kernel_ff_all.mat'];
+    kernel_path = [trackpath, '\核训练\kernel_ff_all-g-0.1.mat'];
     if ~exist(kernel_path, 'file')   
         kernel_ff_all = cell(1,6);
         for ev=1:6
@@ -241,7 +255,7 @@ if ~use_distrabute
             if ~islinear(ev)
                 kernel_ff_all{ev} = ssvm_pre_cal_all_kernel_paper(kernel_ff_all{ev}, gt_frame, ev, kernel_type{ev}, cmd{ev}, [s1 e1 s2 e2]);
                 disp('保存kernel数据...');tic % 保存这么大的数据也很花时间
-                save(kernel_path, 'kernel_ff_all','-v7.3');toc
+                save(kernel_path, 'kernel_ff_all');toc
             end
         end
     else
@@ -255,9 +269,9 @@ else
     % 使用分散存储
     kernel_ff_all = cell(1,6);
     s1 = 1; % fe1的开始帧
-    e1 = 80; % fe1的结束帧
+    e1 = 65; % fe1的结束帧
     s2 = 1; % fe2的开始帧
-    e2 = 80; % fe2的结束帧
+    e2 = 65; % fe2的结束帧
     for ev=1:6 
         ev_kernel_name = [trackpath, '\核训练\dis_kernel_data\row_1_ev',num2str(ev),'.mat'];
         if ~islinear(ev) && ~exist(ev_kernel_name, 'file') 
@@ -290,7 +304,7 @@ end
 
 %% 当当前循环次数t小于上限，且gap不符合要求时，进行循环计算，若想增大精度或轮数，修改gap和iter再运行此cell即可
 usecostall = 0;
-linesearch = 1;
+linesearch = 0;
 if usecostall
     disp('当前选择的损失中包含了虚景！');
     sample_cost = sum_cost_all;
@@ -397,7 +411,12 @@ while t < iter %&& ls*N >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都
     %
     % 将其他的样本从上一轮带过来，再更新ind样本
     alpha_i{t+1} = alpha_i{t};
-    alpha_avg{t+1} = alpha_avg{t}; % 这2局如果写在事件循环里面会出错！
+    y_i{t+1} = y_i{t}; 
+    % 先将所有样本的Wi全带入下一轮,再针对样本和事件进行更新
+    for jj=1:N
+        Wi{t+1,jj} = Wi{t,jj};
+        Li{t+1,jj} = Li{t,jj};
+    end
     %
     
     for ev=1:6 % 每个事件分别更新
@@ -409,23 +428,17 @@ while t < iter %&& ls*N >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都
             
             if linesearch
                 % line-search寻找最佳gamma
-                tmp = lambda(ev)*(Wi{t,ind}{ev}- Ws)'*W{t,ev}- Li{t,ind}(ev)+ ls;
+                tmp = lambda(ev)*(Wi{t,ind}{ev} - Ws)'*W{t,ev}- Li{t,ind}(ev)+ ls;
                 gamma(t) = tmp/(lambda(ev)*norm(Wi{t,ind}{ev}- Ws)^2);
                 gamma(t) = max([0, min([gamma(t),1])]); % clip to 0-1
             else
                 % 普通方法计算步长gamma
                 gamma(t) = 2*N/(2*N + t-1);
             end
+
             % 更新 wi和Li，将更新后的w保存在 W{t+1,ind}中
             Wi{t+1,ind}{ev} = (1- gamma(t))*Wi{t,ind}{ev} + gamma(t)*Ws;
             Li{t+1,ind}(ev) = (1- gamma(t))*Li{t,ind}(ev) + gamma(t)*ls;
-            % 对于此轮没轮到的样本，将其Wi和Li带入下一轮中
-            sample_not_used = mysetdiff(1:N, ind);
-            for jj=sample_not_used
-                % jj 没被用到的样本编号
-                Wi{t+1,jj}{ev} = Wi{t,jj}{ev}; % 直接将其Wi带入下一轮
-                Li{t+1,jj}(ev) = Li{t,jj}(ev);
-            end
 
             % 更新 w和L，将更新后的w保存在 W{t+1,N+1}中
             W{t+1,ev} = W{t,ev} + Wi{t+1,ind}{ev} - Wi{t,ind}{ev};
@@ -450,15 +463,14 @@ while t < iter %&& ls*N >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都
                 phi_y_i{ind,ev} = phi_y_i{ind,ev};
                 s = m; % 找出s的位置
                 n_phi_new = n_phi; 
-                y_i{t+1} = y_i{t}; % y_i不变
+%                 y_i{t+1} = y_i{t}; % y_i不变(放到循环外了 2015.11.22)
             else
                 phi_y_i{ind,ev} = [ phi_y_i{ind,ev}, phi_x_z_hat{ev}]; % 否则将此轮得到的phi加入新一轮中
                 s = size(phi_y_i{ind,ev},2); % s为新出现的
                 n_phi_new = n_phi + 1; % 更新后的支持向量数目
                 % 同时其对应的y^也要加入到y_i中
-                y_i{t+1} = y_i{t}; % 将其他的样本从上一轮带过来，再更新ind样本
-                y_i{t+1}{ind,ev}{n_phi_new} = assign_y_hat_into_y_i(ev, ind, s_frame, e_frame,Fij,Fit,Fid,Fiv,Fmj,Fsj);
-                
+                y_i{t+1} = y_i{t}; % 将其他的样本从上一轮带过来，再更新ind样本(如果有多个核ev，就会出错！因此要放到外面)
+%                 y_i{t+1}{ind,ev}{n_phi_new} = assign_y_hat_into_y_i(ev, ind, s_frame, e_frame,Fij,Fit,Fid,Fiv,Fmj,Fsj);
             end
 
             alpha_vector = zeros(n_phi_new,1);
@@ -473,7 +485,10 @@ while t < iter %&& ls*N >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都
             if numel(alpha_avg{t}{ind,ev})~=numel(alpha_i{t+1}{ind,ev})
                 alpha_avg{t}{ind,ev} = [alpha_avg{t}{ind,ev}; 0];
             end
-            alpha_avg{t+1}{ind,ev} = (t-1)/(t+1)*alpha_avg{t}{ind,ev} + 2/(t+1)*alpha_i{t+1}{ind,ev};
+            % 更新aplha_avg必须把所有的alpha_i全部更新
+            for i_alpha=1:N
+                alpha_avg{t+1}{i_alpha,ev} = (t-1)/(t+1)*alpha_avg{t}{i_alpha,ev} + 2/(t+1)*alpha_i{t+1}{i_alpha,ev};
+            end
             
         end
         
@@ -571,10 +586,10 @@ fprintf('\ttime consumption:\t%0.2f min\n', sum(time)/60);
 plot(aver_loss, '-*');
 % 对得到的收敛曲线进行保存
 if 0
-    name = 'loss_5_13_initwp_line';
-    lossdir = [ trackpath, '\训练结果记录\核记录\'];
+    name = 'loss_5_13_init0p_noline';
+    lossdir = [ trackpath, '\训练结果记录\核记录\BCFWavg\'];
     mkdir(lossdir);
-    save([lossdir, name, '.mat'], 'time','sample_loss','w_best','linesearch',...
+    save([lossdir, name, '.mat'], 'time','sample_loss','w_best','linesearch','w',...
         'delta_y_best','feature_best','alpha_best','kernel_type','cmd','lambda','islinear');
     saveas(1, [lossdir, name, '.fig']);
 end

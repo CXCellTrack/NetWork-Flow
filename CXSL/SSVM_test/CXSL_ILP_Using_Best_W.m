@@ -47,7 +47,7 @@ if 1
         load([ traintrackpath, '\结构化学习\SSVM_Best_W_New.mat']);
     else % 想要复现 excel 中记载的以前的实验结果，只需要手动填写 w_best 即可
         disp('  载入手动填写的w...');
-        thisfile = 'BMRM\loss_5_13_initwp_1e-8.mat';
+        thisfile = 'BCFWavg_paper\initwp\5_13\loss_5_13_cons35_cost1_init0p_noline.mat';
         load([ traintrackpath, '\训练结果记录\', thisfile ], 'w_best','use_op_cons','Wavg');
 %         w_best = Wavg{394};
 %         if ~isequal(use_op_cons, use_op_cons_test)

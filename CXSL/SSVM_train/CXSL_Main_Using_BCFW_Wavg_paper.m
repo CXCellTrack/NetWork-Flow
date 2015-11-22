@@ -237,15 +237,14 @@ while t < iter %% && ls*N >= gap
     % 更新 wi和Li，将更新后的w保存在 W{t+1,ind}中
     % 对于Wi来说，由于上一次不一定选得是i，因此Wi{t,ind}可能为空的，会导致更新的时候似乎有问题？
     % 2015.10.23 发现其实没有被选中的样本是直接将Wi带入了下轮！
+    % 直接将所有样本的Wi带入下一轮
+    for ii=1:N
+        Wi{t+1,ii} = Wi{t,ii}; 
+        Li{t+1,ii} = Li{t,ii};
+    end
+    % 再更新单个样本的Wi
     Wi{t+1,ind} = (1- gamma(t))*Wi{t,ind}+ gamma(t)*Ws; 
     Li(t+1,ind) = (1- gamma(t))*Li(t,ind)+ gamma(t)*ls;
-    % 对于此轮没轮到的样本，将其Wi和Li带入下一轮中
-    sample_not_used = mysetdiff(1:N,ind);
-    for jj=sample_not_used
-        % 没被用到的样本编号
-        Wi{t+1,jj} = Wi{t,jj};
-        Li(t+1,jj) = Li(t,jj); % 直接将其Wi带入下一轮
-    end
 
     % 更新 w和L，将更新后的w保存在 W{t+1,N+1}中
     W{t+1} = W{t} + Wi{t+1,ind} - Wi{t,ind};

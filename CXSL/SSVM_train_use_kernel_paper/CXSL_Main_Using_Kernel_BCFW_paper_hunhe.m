@@ -20,20 +20,40 @@ clear;close all;
 load([ trackpath, '\结构化学习\initial_w_New.mat']);
 % 注意 w 的顺序不能乱
 w = cell(1,6); % 将w也分事件
-if 0
+if exist('bij','var')
+    w{1} = [wij,bij]'; % 采用svm得到的w
+    w{2} = [wit,bit]';
+    w{3} = [wid,bid]';
+    w{4} = [wiv,biv]';
+    w{5} = [wmj,bmj]';
+    w{6} = [wsj,bsj]';
+else
     w{1} = wij'; % 采用svm得到的w
     w{2} = wit';
     w{3} = wid';
     w{4} = wiv';
     w{5} = wmj';
     w{6} = wsj';
+end
+
+if 0 
+    % 第三个数据集（之前的w）
+    w_fore = [-17.69956928	1.61055833	-0.001787913	0.199592206	-0.287005286	-1.058810184	-0.194715268	0.170821175	-15.86943474	-2.459629861	-1.102503407	-1.233255838	-1.209682446	-2.849135318	-5.932152347	3.635597276	3.112043952	0.905772748	-0.112320949	-0.658275898	4.373948249	0.504445114	-0.211398811	-3.571706443	0	0	0	0	0	0	0	0	0	0	-2.873279295	-0.074622812	-1.438747225	-0.381464188	-2.838608426	-5.896985464]';
+
+    w{1} = w_fore( 1:9 ); 
+    w{2} = w_fore( 10:15 );
+    w{3} = w_fore( 16:24 );
+    w{4} = w_fore( 25:29 );
+    w{5} = w_fore( 30:34 );
+    w{6} = w_fore( 35:40 );
 else
-    w{1} = zeros(numel(wij),1); % 使用全0w
-    w{2} = zeros(numel(wit),1);
-    w{3} = zeros(numel(wid),1);
-    w{4} = zeros(numel(wiv),1);
-    w{5} = zeros(numel(wmj),1);
-    w{6} = zeros(numel(wsj),1);
+    % 使用全0w
+    w{1} = zeros(size(w{1}));
+    w{2} = zeros(size(w{2}));
+    w{3} = zeros(size(w{3}));
+    w{4} = zeros(size(w{4}));
+    w{5} = zeros(size(w{5}));
+    w{6} = zeros(size(w{6}));
 end
 
 % 定义样本个数 N 和 单个样本中的帧数 frame
@@ -45,24 +65,31 @@ e_frame = zeros(N,1);
 gt_frame = 65;
 
 % 选择取样方式
-% 1为接龙取样，2为滑窗取样，3为随机取样
 sample_method = 1;
 switch sample_method
-    case 1 % 取样方法1：接龙取样
-        % 按 1-5, 6-10, 11-15, 16-20 这样的方法取样本
-        for ind=1:N
-            s_frame(ind) = (ind - 1)*frame + 1;
-            e_frame(ind) = s_frame(ind) + frame - 1;
+    case 1 % 取样方法1：接龙取样（原方法）
+        % 按 1-5, 6-10, 12-15, 16-20 这样的方法取样本
+        for ii=1:N
+            s_frame(ii) = (ii - 1)*frame + 1;
+            e_frame(ii) = s_frame(ii) + frame - 1;
         end
 
-    case 2 % 取样方法2：滑窗取样
+    case 2 % 取样方法2：重叠接龙取样（new sample method）
+        % 按 1-5, 5-10, 10-15, 15-20 这样的方法取样本
+        for ii=1:N
+            s_frame(ii) = (ii - 1)*frame;
+            e_frame(ii) = s_frame(ii) + frame;
+        end
+        s_frame(1) = 1;
+        
+    case 3 % 取样方法3：滑窗取样
         % 按 1-5，2-6，3-7 这样的方法取样本
         for ind=1:N
             s_frame(ind) = ind;
             e_frame(ind) = s_frame(ind) + frame - 1;
         end
        
-    case 3 % 取样方法3：随机取样
+    case 4 % 取样方法4：随机取样
         rng(0);
         s_frame = randi([1 gt_frame-frame+1], [N 1]);
         e_frame = s_frame + frame - 1;        
@@ -103,7 +130,7 @@ ls = 1; % 样本平均损失函数
 % 设置6个事件的核函数种类以及参数（可选核函数为linear、poly、rbf、sigmoid）
 % 6个事件依次为fij、fit、fid、fiv、fmj、fsj
 kernel_type = {'linear','linear','rbf','linear','linear','linear'};
-cmd = {'','','-g 0.1','','',''};
+cmd = {'','','-g 0.01','','',''};
 % 定义惩罚项 lambda λ（用于控制w的数量级）
 lambda = 1e-2*ones(1,6);
 islinear = strncmp(kernel_type, 'linear', 6); % 逻辑矩阵，用于指示哪些事件是线性
@@ -151,6 +178,8 @@ ind = 0;
 disp('  预计算目标函数和约束条件...');
 
 %% 提前计算好 phi(x,z^) phi(x,z*)和△(z*,z^)，还有约束条件，循环中组装目标函数，再求解
+use_op_cons = [3 5];
+
 fij = cell(N,1);
 fit = cell(N,1);
 fid = cell(N,1);
@@ -174,6 +203,7 @@ end
 
 phi_x_z = cell(N,1);
 sum_cost = cell(N,1);
+sum_cost_all = cell(N,1);
 phi_x_z_star = cell(N,1);
 
 tic;
@@ -183,13 +213,13 @@ for ii=1:N
     disp(['  预计算样本',num2str(ii),'的训练数据...']);
     % ----------------------------------------- %
     % 分配各事件流程变量，预先计算好 phi(x,z)和 △(z*,z)
-    [ fij{ii} fit{ii} fid{ii} fiv{ii} fmj{ii} fsj{ii} phi_x_z{ii} sum_cost{ii} ~] =...
+    [ fij{ii} fit{ii} fid{ii} fiv{ii} fmj{ii} fsj{ii} phi_x_z{ii} sum_cost{ii} sum_cost_all{ii} ] =...
         CXSL_Calculate_Event_Fai_And_Loss( s_frame(ii), e_frame(ii) );
     % 计算约束条件 F，调用 CXSL_Calculate_Constraint_New_Conflict 这个函数
     % 与 BundleMethod_Output_Test 中的同名函数一样
     % ----------------------------------------- %
     % 2015.7.6 使用了新的矛盾约束规则（22矛盾约束）
-    [ F{ii} ] = CXSL_Calculate_Constraint_New_Conflict( 'training', [3 5], s_frame(ii), e_frame(ii),...
+    [ F{ii} ] = CXSL_Calculate_Constraint_New_Conflict( 'training', use_op_cons, s_frame(ii), e_frame(ii),...
         fij{ii}, fit{ii}, fid{ii}, fiv{ii}, fmj{ii}, fsj{ii} );
     % 计算核特有的约束（只是为了减小核运算的规模）
     [ Fkernel{ii} ] = calculate_kernel_constraint( islinear, s_frame(ii), e_frame(ii),...
@@ -207,7 +237,7 @@ end
 toc;
 
 %% 最耗时的步骤在这里！！！计算所有特征间的核
-kernel_path = [trackpath, '\核训练\kernel_ff_all.mat'];
+kernel_path = [trackpath, '\核训练\kernel_ff_all-g-0.01.mat'];
 if ~exist(kernel_path, 'file')   
     kernel_ff_all = cell(1,6);
     for ev=1:6
@@ -243,8 +273,16 @@ for ii=1:N
 end
 
 %% 当当前循环次数t小于上限，且gap不符合要求时，进行循环计算，若想增大精度或轮数，修改gap和iter再运行此cell即可
+usecostall = 0;
+linesearch = 0;
+if usecostall
+    disp('当前选择的损失中包含了虚景！');
+    sample_cost = sum_cost_all;
+else
+    sample_cost = sum_cost;
+end
 
-while (t < iter && ls*N >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必须用到）
+while t < iter %%&& ls*N >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都必须用到）
     t = t + 1;
     
     % 记录下每次循环所用的时间
@@ -275,6 +313,7 @@ while (t < iter && ls*N >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都
     % 目标函数表达式：
     K_OBJ = 0;
     W_phi_all = 0;
+    tic
     for ev=1:6
         if ~islinear(ev) % 只针对非线性核
             %% ------------- 非线性核目标函数 ----------------- %
@@ -300,8 +339,9 @@ while (t < iter && ls*N >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都
         
         end
     end
-    
+    toc
     object_function = K_OBJ + W_phi_all + sum_cost{ind};
+    disp('    目标函数组建完毕');
     sol = solvesdp( F{ind}, -object_function, options );
 
     %% 3. 输出得到的各个变量的值（即y_i，可认为是支持向量）
@@ -336,6 +376,12 @@ while (t < iter && ls*N >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都
     % 将得到的phi_x_z_hat与之前所有的phi进行比较
     % 实际上，如果2个y不相同，但得到的phi有可能相同，因此通过比较phi来确定y是否一样不严谨
     % 正确的方法应该通过比较y来进行，但只要phi相同，alpha对phi组合之后的结果还是一样，因此无本质区别
+    %
+    % 将其他的样本从上一轮带过来，再更新ind样本
+    alpha_i{t+1} = alpha_i{t};
+    y_i{t+1} = y_i{t};
+    %
+    
     for ev=1:6 % 每个事件分别更新
         %% --------------- 线性核更新方法 ---------------- %
         if islinear(ev)
@@ -357,11 +403,11 @@ while (t < iter && ls*N >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都
             Wi{t+1,ind}{ev} = (1- gamma(t))*Wi{t,ind}{ev} + gamma(t)*Ws;
             Li{t+1,ind}(ev) = (1- gamma(t))*Li{t,ind}(ev) + gamma(t)*ls;
             % 对于此轮没轮到的样本，将其Wi和Li带入下一轮中
-            sample_not_used = setdiff(1:N, ind);
-            for jj=1:numel(sample_not_used)
-                inu = sample_not_used(jj); % 没被用到的样本编号
-                Wi{t+1,inu}{ev} = Wi{t,inu}{ev}; % 直接将其Wi带入下一轮
-                Li{t+1,inu}(ev) = Li{t,inu}(ev);
+            sample_not_used = mysetdiff(1:N, ind);
+            for jj=sample_not_used
+                % 没被用到的样本编号
+                Wi{t+1,jj}{ev} = Wi{t,jj}{ev}; % 直接将其Wi带入下一轮
+                Li{t+1,jj}(ev) = Li{t,jj}(ev);
             end
 
             % 更新 w和L，将更新后的w保存在 W{t+1,N+1}中
@@ -401,7 +447,7 @@ while (t < iter && ls*N >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都
             s_vector(s) = 1; 
             % 更新alpha_i
             gamma_aplha = 2*N/(2*N + t-1);
-            alpha_i{t+1} = alpha_i{t}; % 将其他的样本从上一轮带过来，再更新ind样本
+            % 将其他的样本从上一轮带过来，再更新ind样本
             alpha_i{t+1}{ind,ev} = (1-gamma_aplha)*alpha_vector + s_vector*gamma_aplha;
         end
         
@@ -426,15 +472,14 @@ if ls*N <= gap
     t_best = t;
 else
     disp('  达到最大循环次数，算法终止');
-    t_best = find(aver_loss==min(aver_loss(aver_loss~=0))); %  找到过程中损失最小的那个w作为 w_best   
-    t_best
-    t_best = t_best(1);
+%     t_best = find(aver_loss==min(aver_loss(aver_loss~=0))); %  找到过程中损失最小的那个w作为 w_best   
+    t_best = find(aver_loss==min(aver_loss(N+1:end))) %  找到过程中损失最小的那个w作为 w_best
+    t_best = t_best(t_best>N);
+    t_best = t_best(end);
 end   
 
 sample_id = mod(t_best,N); % 根据tbest得到此时的样本编号
 sample_id(sample_id==0) = N;
-
-
 
 %% 得到最终的y^，y*和alpha_i，在测试中使用这2个即可
 w_best = W(t_best,:);
@@ -453,12 +498,12 @@ for ii=1:N % 求标准答案y*
     ystar_best{ii,6} = Fsj(s_frame(ii)+1:e_frame(ii));
     
     % 找出对应的特征
-    feature_best{ii,1} = feature_fij(s_frame(ii):e_frame(ii)-1);
-    feature_best{ii,2} = feature_fit(s_frame(ii):e_frame(ii)-1);
-    feature_best{ii,3} = feature_fid(s_frame(ii):e_frame(ii)-1);
-    feature_best{ii,4} = feature_fiv(s_frame(ii):e_frame(ii)-1);
-    feature_best{ii,5} = feature_fmj(s_frame(ii)+1:e_frame(ii));
-    feature_best{ii,6} = feature_fsj(s_frame(ii)+1:e_frame(ii));
+    feature_best{ii,1} = feature_fij_p(s_frame(ii):e_frame(ii)-1);
+    feature_best{ii,2} = feature_fit_p(s_frame(ii):e_frame(ii)-1);
+    feature_best{ii,3} = feature_fid_p(s_frame(ii):e_frame(ii)-1);
+    feature_best{ii,4} = feature_fiv_p(s_frame(ii):e_frame(ii)-1);
+    feature_best{ii,5} = feature_fmj_p(s_frame(ii)+1:e_frame(ii));
+    feature_best{ii,6} = feature_fsj_p(s_frame(ii)+1:e_frame(ii));
 end
 % 减少一下数据的规模
 for ev=1:6 
@@ -494,8 +539,6 @@ end
 loss_best = aver_loss(t_best);  
 
 %% 保存最佳w，用于测试其他帧精度
-save([ trackpath, '\结构化学习\SSVM_Best_W_New.mat'], 'w_best',...
-    'delta_y_best','feature_best','alpha_best','kernel_type','cmd','lambda','islinear'); % 测试的时候还是需要lambda，虽然线性的被包括在w里面了
 
 fprintf('\n\tt_best:\t%d\n', t_best);
 fprintf('\tgap_best:\t%f\n', loss_best);
@@ -504,10 +547,10 @@ fprintf('\ttime consumption:\t%0.2f min\n', sum(time)/60);
 plot(aver_loss, '-*');
 % 对得到的收敛曲线进行保存
 if 0
-    name = 'loss_5_13_y';
-    lossdir = [ trackpath, '\训练结果记录\BCFW_paper_hunhe\'];
+    name = 'loss_5_13_inti0p_noline';
+    lossdir = [ trackpath, '\训练结果记录\核记录\BCFW\g-0.01\'];
     mkdir(lossdir);
-    save([lossdir, name, '.mat'], 'sample_loss','w_best',...
+    save([lossdir, name, '.mat'], 'time','sample_loss','w_best','linesearch','w',...
         'delta_y_best','feature_best','alpha_best','kernel_type','cmd','lambda','islinear');
     saveas(1, [lossdir, name, '.fig']);
 end
