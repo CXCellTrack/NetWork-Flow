@@ -1,17 +1,6 @@
 % ======================================================================= %
 %
-% 这个是 SSVM 训练的主函数 2015.6.17
-% 按照 active structured learning 中的伪代码编写（Fig.4）
-% 主要分为3个步骤：
-%   1. 调用 CXSL_ILP 计算当前w下的最佳分配方案 z^
-%
-%   2. 计算梯度 U(x,z*,z^)=phi(x,z*)-phi(x,z^)，并得到a与b的值（公式12、13）
-%
-%   3. 通过a、b解方程14求出更新后的 w和 kexi，计算gap的大小
-%
-%   运行中发现有内存不足的问题，主要是没有连续的内存，因此通过预分配变量空间、
-% 每运行50次 clear 一下变量并重新载入来解决
-% 
+% BCFWWavg_kernel混合算法
 %
 % ======================================================================= %
 clear;close all;
@@ -36,7 +25,7 @@ else
     w{6} = wsj';
 end
 
-if 1 
+if 0
     % 第三个数据集（之前的w）
     w_fore = [-17.69956928	1.61055833	-0.001787913	0.199592206	-0.287005286	-1.058810184	-0.194715268	0.170821175	-15.86943474	-2.459629861	-1.102503407	-1.233255838	-1.209682446	-2.849135318	-5.932152347	3.635597276	3.112043952	0.905772748	-0.112320949	-0.658275898	4.373948249	0.504445114	-0.211398811	-3.571706443	0	0	0	0	0	0	0	0	0	0	-2.873279295	-0.074622812	-1.438747225	-0.381464188	-2.838608426	-5.896985464]';
 
@@ -132,8 +121,8 @@ ls = 1; % 样本平均损失函数
 %% ------------------ 核函数所用到的变量 ----------------- % 
 % 设置6个事件的核函数种类以及参数（可选核函数为linear、poly、rbf、sigmoid）
 % 6个事件依次为fij、fit、fid、fiv、fmj、fsj
-kernel_type = {'linear','linear','rbf','linear','linear','linear'};
-cmd = {'','','-g 0.1','','',''};
+kernel_type = {'linear','linear','linear','linear','linear','linear'};
+cmd = {'','','-g 0.01','','',''};
 % 定义惩罚项 lambda λ（用于控制w的数量级）
 lambda = 1e-2*ones(1,6);
 islinear = strncmp(kernel_type, 'linear', 6); % 逻辑矩阵，用于指示哪些事件是线性
@@ -241,7 +230,7 @@ end
 %% 最耗时的步骤在这里！！！计算所有特征间的核
 use_distrabute = 0;
 if ~use_distrabute
-    kernel_path = [trackpath, '\核训练\kernel_ff_all-g-0.1.mat'];
+    kernel_path = [trackpath, '\核训练\kernel_ff_all-g-0.01.mat'];
     if ~exist(kernel_path, 'file')   
         kernel_ff_all = cell(1,6);
         for ev=1:6
@@ -469,8 +458,8 @@ while t < iter %&& ls*N >= gap) || t <= N % 迭代次数必须大于样本数（即每个样本都
                 s = size(phi_y_i{ind,ev},2); % s为新出现的
                 n_phi_new = n_phi + 1; % 更新后的支持向量数目
                 % 同时其对应的y^也要加入到y_i中
-                y_i{t+1} = y_i{t}; % 将其他的样本从上一轮带过来，再更新ind样本(如果有多个核ev，就会出错！因此要放到外面)
-%                 y_i{t+1}{ind,ev}{n_phi_new} = assign_y_hat_into_y_i(ev, ind, s_frame, e_frame,Fij,Fit,Fid,Fiv,Fmj,Fsj);
+%                 y_i{t+1} = y_i{t}; % 将其他的样本从上一轮带过来，再更新ind样本(如果有多个核ev，就会出错！因此要放到外面)
+                y_i{t+1}{ind,ev}{n_phi_new} = assign_y_hat_into_y_i(ev, ind, s_frame, e_frame,Fij,Fit,Fid,Fiv,Fmj,Fsj);
             end
 
             alpha_vector = zeros(n_phi_new,1);
@@ -586,7 +575,7 @@ fprintf('\ttime consumption:\t%0.2f min\n', sum(time)/60);
 plot(aver_loss, '-*');
 % 对得到的收敛曲线进行保存
 if 0
-    name = 'loss_5_13_init0p_noline';
+    name = 'loss_5_13_init0p_noline-linear';
     lossdir = [ trackpath, '\训练结果记录\核记录\BCFWavg\'];
     mkdir(lossdir);
     save([lossdir, name, '.mat'], 'time','sample_loss','w_best','linesearch','w',...

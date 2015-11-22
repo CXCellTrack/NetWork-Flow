@@ -43,7 +43,7 @@ use_op_cons = [3 5];
 [ ~, traintrackpath ] = getpath( 'training' );
 
 disp('  载入之前 SSVM 训练保存数据...'); 
-thisfile = '\核记录\BCFW\loss_5_13_intiwp_noline.mat';
+thisfile = '\核记录\BCFWavg\loss_5_13_init0p_noline-linear.mat';
 load([ traintrackpath, '\训练结果记录\', thisfile]);
 
 disp('组建目标函数...');tic
@@ -105,7 +105,7 @@ end
 % ------------------------------------------------------ %
 
 %% 保存得到的流量变量结果到 track_data 中，供后续画图用（通常不要保存！）
-if 0
+if 1
     if exist('thisfile', 'var')
         matpath = [trackpath, '\测试结果记录\',strrep(thisfile, 'loss_', '')];
     else

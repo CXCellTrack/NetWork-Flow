@@ -1,17 +1,6 @@
 % ======================================================================= %
 %
-% Õâ¸öÊÇ SSVM ÑµÁ·µÄÖ÷º¯Êı 2015.6.17
-% °´ÕÕ active structured learning ÖĞµÄÎ±´úÂë±àĞ´£¨Fig.4£©
-% Ö÷Òª·ÖÎª3¸ö²½Öè£º
-%   1. µ÷ÓÃ CXSL_ILP ¼ÆËãµ±Ç°wÏÂµÄ×î¼Ñ·ÖÅä·½°¸ z^
-%
-%   2. ¼ÆËãÌİ¶È U(x,z*,z^)=phi(x,z*)-phi(x,z^)£¬²¢µÃµ½aÓëbµÄÖµ£¨¹«Ê½12¡¢13£©
-%
-%   3. Í¨¹ıa¡¢b½â·½³Ì14Çó³ö¸üĞÂºóµÄ wºÍ kexi£¬¼ÆËãgapµÄ´óĞ¡
-%
-%   ÔËĞĞÖĞ·¢ÏÖÓĞÄÚ´æ²»×ãµÄÎÊÌâ£¬Ö÷ÒªÊÇÃ»ÓĞÁ¬ĞøµÄÄÚ´æ£¬Òò´ËÍ¨¹ıÔ¤·ÖÅä±äÁ¿¿Õ¼ä¡¢
-% Ã¿ÔËĞĞ50´Î clear Ò»ÏÂ±äÁ¿²¢ÖØĞÂÔØÈëÀ´½â¾ö
-% 
+% BCFW kernel»ìºÏËã·¨
 %
 % ======================================================================= %
 clear;close all;
@@ -130,7 +119,7 @@ ls = 1; % Ñù±¾Æ½¾ùËğÊ§º¯Êı
 % ÉèÖÃ6¸öÊÂ¼şµÄºËº¯ÊıÖÖÀàÒÔ¼°²ÎÊı£¨¿ÉÑ¡ºËº¯ÊıÎªlinear¡¢poly¡¢rbf¡¢sigmoid£©
 % 6¸öÊÂ¼şÒÀ´ÎÎªfij¡¢fit¡¢fid¡¢fiv¡¢fmj¡¢fsj
 kernel_type = {'linear','linear','rbf','linear','linear','linear'};
-cmd = {'','','-g 0.01','','',''};
+cmd = {'','','-g 0.001','','',''};
 % ¶¨Òå³Í·£Ïî lambda ¦Ë£¨ÓÃÓÚ¿ØÖÆwµÄÊıÁ¿¼¶£©
 lambda = 1e-2*ones(1,6);
 islinear = strncmp(kernel_type, 'linear', 6); % Âß¼­¾ØÕó£¬ÓÃÓÚÖ¸Ê¾ÄÄĞ©ÊÂ¼şÊÇÏßĞÔ
@@ -237,7 +226,7 @@ end
 toc;
 
 %% ×îºÄÊ±µÄ²½ÖèÔÚÕâÀï£¡£¡£¡¼ÆËãËùÓĞÌØÕ÷¼äµÄºË
-kernel_path = [trackpath, '\ºËÑµÁ·\kernel_ff_all-g-0.01.mat'];
+kernel_path = [trackpath, '\ºËÑµÁ·\kernel_ff_all-g-0.001.mat'];
 if ~exist(kernel_path, 'file')   
     kernel_ff_all = cell(1,6);
     for ev=1:6
@@ -429,13 +418,13 @@ while t < iter %%&& ls*N >= gap) || t <= N % µü´ú´ÎÊı±ØĞë´óÓÚÑù±¾Êı£¨¼´Ã¿¸öÑù±¾¶
                 phi_y_i{ind,ev} = phi_y_i{ind,ev};
                 s = m; % ÕÒ³ösµÄÎ»ÖÃ
                 n_phi_new = n_phi; 
-                y_i{t+1} = y_i{t}; % y_i²»±ä
+%                 y_i{t+1} = y_i{t}; % y_i²»±ä
             else
                 phi_y_i{ind,ev} = [ phi_y_i{ind,ev}, phi_x_z_hat{ev}]; % ·ñÔò½«´ËÂÖµÃµ½µÄphi¼ÓÈëĞÂÒ»ÂÖÖĞ
                 s = size(phi_y_i{ind,ev},2); % sÎªĞÂ³öÏÖµÄ
                 n_phi_new = n_phi + 1; % ¸üĞÂºóµÄÖ§³ÖÏòÁ¿ÊıÄ¿
                 % Í¬Ê±Æä¶ÔÓ¦µÄy^Ò²Òª¼ÓÈëµ½y_iÖĞ
-                y_i{t+1} = y_i{t}; % ½«ÆäËûµÄÑù±¾´ÓÉÏÒ»ÂÖ´ø¹ıÀ´£¬ÔÙ¸üĞÂindÑù±¾
+%                 y_i{t+1} = y_i{t}; % ½«ÆäËûµÄÑù±¾´ÓÉÏÒ»ÂÖ´ø¹ıÀ´£¬ÔÙ¸üĞÂindÑù±¾
                 y_i{t+1}{ind,ev}{n_phi_new} = assign_y_hat_into_y_i(ev, ind, s_frame, e_frame,Fij,Fit,Fid,Fiv,Fmj,Fsj);
                 
             end
@@ -546,8 +535,8 @@ fprintf('\ttime consumption:\t%0.2f min\n', sum(time)/60);
 plot(aver_loss, '-*');
 % ¶ÔµÃµ½µÄÊÕÁ²ÇúÏß½øĞĞ±£´æ
 if 0
-    name = 'loss_5_13_inti0p_noline';
-    lossdir = [ trackpath, '\ÑµÁ·½á¹û¼ÇÂ¼\ºË¼ÇÂ¼\BCFW\g-0.01\'];
+    name = 'loss_5_13_init0p_noline-g-0.001';
+    lossdir = [ trackpath, '\ÑµÁ·½á¹û¼ÇÂ¼\ºË¼ÇÂ¼\BCFW\'];
     mkdir(lossdir);
     save([lossdir, name, '.mat'], 'time','sample_loss','w_best','linesearch','w',...
         'delta_y_best','feature_best','alpha_best','kernel_type','cmd','lambda','islinear');
