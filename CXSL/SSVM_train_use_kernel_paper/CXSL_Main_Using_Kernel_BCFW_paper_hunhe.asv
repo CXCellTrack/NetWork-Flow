@@ -340,7 +340,7 @@ while t < iter %%&& ls*N >= gap) || t <= N % µü´ú´ÎÊý±ØÐë´óÓÚÑù±¾Êý£¨¼´Ã¿¸öÑù±¾¶
         end
     end
     toc
-    object_function = K_OBJ + W_phi_all + sample_cost{ind};
+    object_function = K_OBJ + W_phi_all + sum_cost{ind};
     disp('    Ä¿±êº¯Êý×é½¨Íê±Ï');
     sol = solvesdp( F{ind}, -object_function, options );
 
@@ -389,7 +389,7 @@ while t < iter %%&& ls*N >= gap) || t <= N % µü´ú´ÎÊý±ØÐë´óÓÚÑù±¾Êý£¨¼´Ã¿¸öÑù±¾¶
             Ws = PSI_zstar_zhat/(lambda(ev)*N);
             ls = delta_zstar_zhat/N;  
             % ¼ÆËãgap
-            if linesearch
+            if 0
                 % line-searchÑ°ÕÒ×î¼Ñgamma
                 tmp = lambda(ev)*(Wi{t,ind}{ev}- Ws)'*W{t,ev}- Li{t,ind}(ev)+ ls;
                 gamma(t) = tmp/(lambda(ev)*norm(Wi{t,ind}{ev}- Ws)^2);
