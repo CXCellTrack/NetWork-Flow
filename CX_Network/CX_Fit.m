@@ -81,7 +81,8 @@ tic;
     %% 9.对每个前景轮廓进行分段线性拟合
     seglist = lineseg( edgelist, tolerance );    %%使用线性分段    
     figure;
-    imshow(edgeim); % 后续的绘图都是在edgeim前景轮廓上进行操作
+%     imshow(edgeim); % 后续的绘图都是在edgeim前景轮廓上进行操作
+    imshow(zeros(size(edgeim)));
     hold on;
     
     %% 第一部分内容总结

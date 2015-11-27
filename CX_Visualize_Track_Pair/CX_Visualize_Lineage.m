@@ -17,7 +17,7 @@ else
     dataset = 'training';
 end
 [ ~, trackpath ] = getpath( dataset );
-trackpath = 'E:\datasets\first_edition\competition_datasets\N2DL-HeLa\01_2-16_track';
+trackpath = 'E:\datasets\first_edition\training_datasets\N2DL-HeLa\02_4-16_track';
 load([trackpath, '\Pair\Pre_data_New.mat']);
 
 disp('  载入真实流程变量数据...');
@@ -28,13 +28,14 @@ e_frame = numel(Fmj);
 frame = e_frame - s_frame + 1;
 
 color = colormap(hsv);close('1'); % 选择颜色
-color_numbel = numel(color)/3;
-color = color(randperm(color_numbel),:);
+nc = numel(color)/3;
+color = color(randperm(nc),:);
 
 
 %% 开始进行循环绘制
-im_addr = 'E:\datasets\first_edition\competition_datasets\N2DL-HeLa\01\t00.tif'; % 绘图底板
+im_addr = 'E:\datasets\first_edition\training_datasets\N2DL-HeLa\02\t00.tif'; % 绘图底板
 im = imread(im_addr);im = imadjust(im);
+im = zeros(size(im));
 imshow(im);%imcontrast(gca);
 hold on;
 
@@ -64,7 +65,7 @@ for t = s_frame:e_frame
         if t~=s_frame
             %########## 出现 ##########
             if Fsj{t}(j)==1   
-                indc = randi(color_numbel);
+                indc = randi(nc);
                 Ellipse{t}{j}.color_index = indc; 
                 CX_plot_ball( Ellipse{t}{j}, color ); % 出现比较特殊，新出现的需要在这里上色
             end

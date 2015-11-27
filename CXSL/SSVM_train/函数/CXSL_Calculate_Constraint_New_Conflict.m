@@ -1,4 +1,4 @@
-function [ F ] = CXSL_Calculate_Constraint_New_Conflict( dataset, use_op_cons, s_frame,e_frame,fij,fit,fid,fiv,fmj,fsj )
+function [ Ffull Fbase ] = CXSL_Calculate_Constraint_New_Conflict( dataset, use_op_cons, s_frame,e_frame,fij,fit,fid,fiv,fmj,fsj )
 % ================================================================== %
 %
 % 本函数用于计算约束条件 F
@@ -465,9 +465,12 @@ toc
       
 %##########################################################################
 
+Fbase = [ F1, F2, F3, F4 ];
 Foptional = [ Fop1 Fop2 Fop3 Fop5 ]; % 4错误，6、7无需启用，1、2与真实情况有矛盾，因此只考虑3、5（2015.10.3）
 % clear Fop1 Fop2 Fop3 Fop4 Fop5 Fop6 Fop7;
-F = [ F1, F2, F3, F4, Foptional ];
+Ffull = [ Fbase, Foptional ];
+
+
 % clear F1 F2 F3 F4 Foptional;
 % 保存目标函数与约束条件，清空缓存
 % clearvars -except frame Ellipse F object_function fij fid fiv fit fsj fmj s_frame e_frame fai_x_z sum_cost; 

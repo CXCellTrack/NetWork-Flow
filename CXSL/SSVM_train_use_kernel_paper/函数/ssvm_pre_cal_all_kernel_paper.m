@@ -73,7 +73,7 @@ for ii=s1:e1-1
         end
 
         disp(['    计算第',num2str(ii), '帧与第',num2str(jj),'帧的核函数...']);
-        K_mat = zeros(numel(fe1{ii}),numel(fe2{jj}));
+        K_mat = sparse(numel(fe1{ii}),numel(fe2{jj})); % 用稀疏矩阵存放更省空间
         
         for hh=1:size(fe1{ii},1) % 按行来
             if ev==3

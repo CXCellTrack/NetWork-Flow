@@ -9,14 +9,14 @@
 %######################################
 clear;close all;
 
-if 1
+if 0
     dataset = 'competition'; % 选择训练还是测试
 else
     dataset = 'training';
 end
 [ segpath, ~ ] = getpath( dataset );
 
-rawpic_dir=dir([ segpath, '\*.tif' ]); % 原始tif图片地址
+rawpic_dir=dir([ segpath, '\*.png' ]); % 原始tif图片地址
 % 输出拟合后图片地址 
 output_addr = [ segpath, '\FOI拟合图2.0\'];
 if ~exist(output_addr, 'dir')

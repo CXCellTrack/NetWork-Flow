@@ -118,8 +118,8 @@ ls = 1; % Ñù±¾Æ½¾ùËğÊ§º¯Êı
 %% ------------------ ºËº¯ÊıËùÓÃµ½µÄ±äÁ¿ ----------------- % 
 % ÉèÖÃ6¸öÊÂ¼şµÄºËº¯ÊıÖÖÀàÒÔ¼°²ÎÊı£¨¿ÉÑ¡ºËº¯ÊıÎªlinear¡¢poly¡¢rbf¡¢sigmoid£©
 % 6¸öÊÂ¼şÒÀ´ÎÎªfij¡¢fit¡¢fid¡¢fiv¡¢fmj¡¢fsj
-kernel_type = {'linear','linear','rbf','linear','linear','linear'};
-cmd = {'','','-g 0.001','','',''};
+kernel_type = {'linear','linear','sigmoid','linear','linear','linear'};
+cmd = {'','','-s 0.5','','',''};
 % ¶¨Òå³Í·£Ïî lambda ¦Ë£¨ÓÃÓÚ¿ØÖÆwµÄÊıÁ¿¼¶£©
 lambda = 1e-2*ones(1,6);
 islinear = strncmp(kernel_type, 'linear', 6); % Âß¼­¾ØÕó£¬ÓÃÓÚÖ¸Ê¾ÄÄĞ©ÊÂ¼şÊÇÏßĞÔ
@@ -161,7 +161,7 @@ aver_loss = zeros(iter,1); % ¼ÇÂ¼Ã¿Ò»ÂÖÖĞÑù±¾ËğÊ§º¯Êı¾ùÖµ
 % Ñ­»·Çó½â²¿·Ö²ÎÊıÉèÖÃ
 options = sdpsettings('verbose', 0, 'solver', 'gurobi');
 rng(0); % º¬ÓĞËæ»úÑ¡Ôñ²¿·Ö£¬ĞèÒªÉè¶¨ÖÖ×Ó
-random = 0; % ±äÁ¿random×÷ÎªÒ»¸öflag£¬Îª1Ê±ÊÇËæ»ú³éÑù£¬Îª0Ê±ÊÇ°´Ë³Ğò³éÑù
+random = 1; % ±äÁ¿random×÷ÎªÒ»¸öflag£¬Îª1Ê±ÊÇËæ»ú³éÑù£¬Îª0Ê±ÊÇ°´Ë³Ğò³éÑù
 ind = 0;
 % ======================================================================= %
 disp('  Ô¤¼ÆËãÄ¿±êº¯ÊıºÍÔ¼ÊøÌõ¼ş...');
@@ -226,7 +226,8 @@ end
 toc;
 
 %% ×îºÄÊ±µÄ²½ÖèÔÚÕâÀï£¡£¡£¡¼ÆËãËùÓĞÌØÕ÷¼äµÄºË
-kernel_path = [trackpath, '\ºËÑµÁ·\kernel_ff_all-g-0.001.mat'];
+clear Kernel_ev kernel_ff_all % ·ÀÖ¹ÄÚ´æ²»¹»
+kernel_path = [trackpath, '\ºËÑµÁ·\kernel_ff_all-s-0.5.mat'];
 if ~exist(kernel_path, 'file')   
     kernel_ff_all = cell(1,6);
     for ev=1:6
@@ -244,9 +245,14 @@ if ~exist(kernel_path, 'file')
         end
     end
 else
-    disp('ÔØÈëÊÂÏÈ¼ÆËãºÃµÄºËº¯Êı...');
+    disp(['ÔØÈëÊÂÏÈ¼ÆËãºÃµÄºËº¯Êı ',kernel_path,' ...']);
     load(kernel_path); % Èô´æÔÚÖ±½ÓÔØÈë¼´¿É
 end
+
+% ½öÓÃÓÚµ¥ºËµÄÊ±ºò£¬É¾Ò»¸ö±äÁ¿¿ÉÒÔÊ¡µãÄÚ´æ
+ev = 3;
+Kernel_ev = kernel_ff_all{ev};
+clear kernel_ff_all
 
 %% ¸øy_i¡¢phi_y_i·ÖÅä³õÖµ
 for ii=1:N
@@ -308,7 +314,7 @@ while t < iter %%&& ls*N >= gap) || t <= N % µü´ú´ÎÊı±ØĞë´óÓÚÑù±¾Êı£¨¼´Ã¿¸öÑù±¾¶
             %% ------------- ·ÇÏßĞÔºËÄ¿±êº¯Êı ----------------- %
             % Ê¹ÓÃ·ÇÏßĞÔºËÊ±Õâ¸öÄÚ»ıÓÃÆäËûºËº¯Êı´úÌæ
             % ²¢ÇÒ°´²»Í¬ÊÂ¼ş¿ÉÒÔÊ¹ÓÃ²»Í¬ºË
-            Kernel_ev = kernel_ff_all{ev};
+%             Kernel_ev = kernel_ff_all{ev}; % Èç¹ûÓĞ¶à¸öºË£¬ÔòÕâ¾ä±ØĞëÒª£¬·ñÔò¿ÉÒÔ°ÑKernel_ev·Åµ½Ñ­»·Íâ
             y_ev = y_i{t}(:,ev); % È¡µ½¸ÃÊÂ¼şµÄy_i
             alpha_ev = alpha_i{t}(:,ev); % È¡µ½¸ÃÊÂ¼şµÄalpha_i
             ind_train = ind;
@@ -535,8 +541,8 @@ fprintf('\ttime consumption:\t%0.2f min\n', sum(time)/60);
 plot(aver_loss, '-*');
 % ¶ÔµÃµ½µÄÊÕÁ²ÇúÏß½øĞĞ±£´æ
 if 0
-    name = 'loss_5_13_init0p_noline-g-0.001';
-    lossdir = [ trackpath, '\ÑµÁ·½á¹û¼ÇÂ¼\ºË¼ÇÂ¼\BCFW\'];
+    name = 'loss_5_13_init0p_noline-s-0.5-rng';
+    lossdir = [ trackpath, '\ÑµÁ·½á¹û¼ÇÂ¼\ºË¼ÇÂ¼\BCFW\sigmoid\'];
     mkdir(lossdir);
     save([lossdir, name, '.mat'], 'time','sample_loss','w_best','linesearch','w',...
         'delta_y_best','feature_best','alpha_best','kernel_type','cmd','lambda','islinear');

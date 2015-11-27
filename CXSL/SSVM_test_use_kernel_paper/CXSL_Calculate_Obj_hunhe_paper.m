@@ -82,7 +82,7 @@ for ev=1:6
     %% 考察分裂事件
 %     tic
     if ev==3 
-        N = size(alpha_best,1);
+        N = size(alpha_best,1); % 样本数
         for ii=1:N
             for nsv=1:numel(alpha_best{ii,ev})
                 alpha1 = alpha_best{ii,ev}(nsv); % 一个alpha

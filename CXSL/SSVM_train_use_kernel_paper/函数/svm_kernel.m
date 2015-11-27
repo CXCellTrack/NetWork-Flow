@@ -7,6 +7,8 @@ for ii=1:2:numel(cmdcell)
         degree = str2num( cmdcell{ii+1} );
     elseif strcmp(cmdcell{ii}, '-g')
         gamma = str2num( cmdcell{ii+1} );
+    elseif strcmp(cmdcell{ii}, '-s')
+        sig = str2num( cmdcell{ii+1} );
     end
 end
         
@@ -26,7 +28,7 @@ switch kernel_type_ev(1)
     case 'r' % 'rbf' 
         K = exp(-gamma*norm(u-v)^2);
     case 's' % 'sigmoid'
-        K = tanh(gamma*u'*v);
+        K = tanh(sig*u'*v);
     otherwise
         error('请打开函数 ssvm_kernel 查看可供选择的核函数！');
 end

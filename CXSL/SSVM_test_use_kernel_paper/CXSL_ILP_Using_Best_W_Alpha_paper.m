@@ -43,7 +43,7 @@ use_op_cons = [3 5];
 [ ~, traintrackpath ] = getpath( 'training' );
 
 disp('  载入之前 SSVM 训练保存数据...'); 
-thisfile = '\核记录\BCFWavg\loss_5_13_init0p_noline-linear.mat';
+thisfile = '核记录\BCFW\sigmoid\loss_5_13_init0p_noline-s-0.5-rng.mat';
 load([ traintrackpath, '\训练结果记录\', thisfile]);
 
 disp('组建目标函数...');tic
@@ -54,7 +54,7 @@ toc
 
 %% 最终求解
 disp('  开始求解ILP...');
-clearvars -except F object_function s_frame e_frame  fij fid fiv fit fsj fmj loss dataset count count_F_false exist_GT trackpath thisfile;
+% clearvars -except F object_function s_frame e_frame  fij fid fiv fit fsj fmj loss dataset count count_F_false exist_GT trackpath thisfile;
 % 注意，原先采用先算出 fai(x,z) = <feature,z>，在计算 obj = <w,fai(x,z)>;
 % 现在采用先计算 <w,feature>，在计算 obj = <w,feature>*z，速度得到了明显提升
 % 但这是针对于一次计算而言，如果在循环中每次都要这么计算目标函数，速度还是没有原方法快 2015.6.24
