@@ -12,11 +12,11 @@ run('CX_ILP_Pair_Pre_New');
 %% 3、计算特征，生成 feature_plus 并保存
 run('CXSL_Combine_feature_all_New');
 
-%% 4、用训练得到的w来求解ILP问题
-run('CXSL_ILP_Using_Best_W_New');
+%% 4、SSVM训练最佳w
+run('CXSL_Main_Using_BCFW_paper');
 
-%% 5、绘制椭圆的新拟合图
-CX_RePlot_Ellipse( 'competition');
+%% 5、用训练得到的w来求解ILP问题
+run('CXSL_ILP_Using_Best_W');
 
 %% 6、绘制最终的跟踪结果
 run('CX_Visualize_Track_Pair_New');
