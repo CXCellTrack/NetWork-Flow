@@ -8,11 +8,12 @@
 %######################################
 
 clear;close all
+
 %% 读取 man_track 中的信息
 
-[ ~, trackpath ] = getpath( 'training' );
+[ segpath, trackpath ] = getpath( 'training' );
 
-last = max(strfind(trackpath, '\'));
+last = max(strfind(segpath, '\'));
 txtpath = [trackpath(1:last+2), '_GT\TRA\man_track.txt'];
 man_track = load( txtpath );
 man_track(:,2:3) = man_track(:,2:3) + 1;
@@ -56,8 +57,8 @@ for i_m=1:size(current_tracks,1)
     end
     % 对中间所有的传递帧，move设为1
     for m_t=tmp_row(2):n_m-1
-        e_last = label2e{m_t}(tmp_row(1));
-        e_next = label2e{m_t+1}(tmp_row(1));
+        e_last = label2e{m_t}(tmp_row(1),1);
+        e_next = label2e{m_t+1}(tmp_row(1),1);
         
         % -------------------------------------------------------- %
         % 因为存在某些*点无对应椭圆的问题，所以需要将其设置为消失事件
@@ -98,7 +99,7 @@ app_tracks = app_tracks(app_tracks(:,2)~=1, :);
 for a_t=1:size(app_tracks,1)
     tmp_row = app_tracks(a_t,:);
     % 找到新出现的椭圆e_app, 设置其出现为1
-    e_app = label2e{tmp_row(2)}(tmp_row(1));
+    e_app = label2e{tmp_row(2)}(tmp_row(1),1);
     % e_app有可能为0（当该点无对应椭圆时），因此需要判断下
     if e_app
         Fsj{tmp_row(2)}(e_app) = 1;
@@ -115,7 +116,7 @@ for h=1:size(die_tracks,1)
     if any(fathers==tmp_row(1)) % 去除母细胞
         continue;
     end
-    e_die = label2e{tmp_row(3)}(tmp_row(1));
+    e_die = label2e{tmp_row(3)}(tmp_row(1),1);
     % e_die有可能为0（当该点无对应椭圆时），因此需要判断下
     if e_die
         Fit{tmp_row(3)}(e_die) = 1;
@@ -147,9 +148,9 @@ for d_t=1:divide_num
     label_son1 = divide_tracks(d_t*2-1, 1);
     label_son2 = divide_tracks(d_t*2, 1);
     % 对应到椭圆上的父与子
-    e_father = label2e{t-1}(label_father);
-    e_son1 = label2e{t}(label_son1);
-    e_son2 = label2e{t}(label_son2);
+    e_father = label2e{t-1}(label_father,1);
+    e_son1 = label2e{t}(label_son1,1);
+    e_son2 = label2e{t}(label_son2,1);
     % ----------------------------------------- %
     % 检查是否有与之对应的椭圆
     switch num2str(logical([e_father e_son1 e_son2]))
@@ -194,7 +195,7 @@ end
 
 %% 寻找merge信息
 for t=2:frame-1 
-    tongji = tabulate(label2e{t}); % 统计各个椭圆出现的次数
+    tongji = tabulate(label2e{t}(:,1)); % 统计各个椭圆出现的次数
     % 找出发生merge的椭圆集合（可能有多个）
     merge_collect = tongji(tongji(:,2)==2, 1);  % 出现2次的椭圆说明包含了2个*
     merge_collect = setdiff(merge_collect,0);
@@ -206,15 +207,15 @@ for t=2:frame-1
     for iind=1:numel( merge_collect ) % 对于集合中的每个椭圆，修改其 Fmj 
         % 找出2个*点
         bigcell = merge_collect(iind);
-        label_merge = find(label2e{t} == bigcell)';
+        label_merge = find(label2e{t}(:,1) == bigcell)';
         
         % --------------------------------------------------------------- %
         % 判断是否新出现有2种情况
         % 1、新点，即编号很大的点新出现，利用编号是否超过上一帧的最大数判断
         % 2、旧点，编号小，但在上一帧中无对应椭圆，也为新出现（pair2merge中出现nan）
         % 因此需要针对以上2种情况分别判断
-        e_son1 = label2e{t-1}(label_merge(1));
-        e_son2 = label2e{t-1}(label_merge(2));
+        e_son1 = label2e{t-1}(label_merge(1),1);
+        e_son2 = label2e{t-1}(label_merge(2),1);
         
         if sum([e_son1,e_son2]==0)==1 % 其中一个未标记上，则肯定被判定为出现了
             Fsj{t}(bigcell) = 0; % 需要将出现事件取消掉
@@ -260,7 +261,7 @@ end
 
 %% 寻找split信息
 for t=1:frame-1 
-    tongji = tabulate(label2e{t}); % 统计各个椭圆出现的次数
+    tongji = tabulate(label2e{t}(:,1)); % 统计各个椭圆出现的次数
     % 找出发生merge的椭圆集合（可能有多个）
     e_merged = tongji(tongji(:,2)==2, 1);  % 出现2次的椭圆说明包含了2个*
     e_merged = setdiff(e_merged, 0);
@@ -279,9 +280,9 @@ for t=1:frame-1
             continue;
         end
         
-        label_sources = find(label2e{t}==bigcell)'; % 找到2个小细胞的集合
-        e_son1 = label2e{t+1}(label_sources(1));
-        e_son2 = label2e{t+1}(label_sources(2));
+        label_sources = find(label2e{t}(:,1)==bigcell)'; % 找到2个小细胞的集合
+        e_son1 = label2e{t+1}(label_sources(1),1);
+        e_son2 = label2e{t+1}(label_sources(2),1);
         % 如果2个label之后对应的不是同一个椭圆，说明split了
         if e_son1 ~= e_son2 
             % 找出分离后的2个椭圆

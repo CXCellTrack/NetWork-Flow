@@ -1,6 +1,6 @@
 function Area = CX_Convhull(e1, e2)
      
-% 先计算e1的圆周点，取361即可
+% 先计算e1的圆周点，点可以少取点以加快速度
 alpha1 = e1.alpha;
 a = e1.a;
 b = e1.b;
@@ -15,7 +15,7 @@ yq= b*sind(polar_angle);
 xn1=xq*c-yq*s+x0;
 yn1=xq*s+yq*c+y0;
 
-% 再计算e2的圆周点，取20即可
+% 再计算e2的圆周点
 alpha1 = e2.alpha;
 a = e2.a;
 b = e2.b;

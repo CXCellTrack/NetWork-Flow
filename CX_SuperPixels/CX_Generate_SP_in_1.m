@@ -40,17 +40,19 @@ function [ SP, new_labels, maskim, RGB_label ] = CX_Generate_SP_in_1( raw_pic, b
 img = imread(raw_pic);
 bw = imread(bw_pic);
 bw = imfill(bw, 'holes');
-img(~bw) = 0; % java过分割为0的就强制使原始图片也为0
 
-imga = imadjust(img); % 增加对比度后分割效果好
-imgs = im2uint8(im2double(imga)); % uint8的效果比较好
+img(~bw) = 0; % bw欠分割为0的就强制使原始图片也为0
+imga = imadjust(img); % 先转成double形式 imshow(imga)
+% 注意：操作的顺序很重要，发现先=0再adjust效果更好，因为前景更加明亮，利于分割
+
+imgs = im2uint8(im2double(imga)); % 只支持uint8作为输入 imshow(imgs)
 [labels, numlabels] = slicomex(imgs, nsp); % numlabels is the same as number of superpixels
 
-if isa(img, 'uint16')
+if isa(imga, 'uint16')
     col = 65535; % 颜色要注意输入图片的维数
-elseif isa(img, 'uint8')
+elseif isa(imga, 'uint8')
     col = 255;
-elseif isa(img, 'double')
+elseif isa(imga, 'double')
     col = 1;
 end
 

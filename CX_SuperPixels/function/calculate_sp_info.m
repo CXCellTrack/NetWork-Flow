@@ -16,4 +16,5 @@ for j=1:numel(label_zuhe)
     superpixels{row}{j,1}.centroid = [mean(sum_pixellist(:,1)), mean(sum_pixellist(:,2))];
     superpixels{row}{j,1}.flag_combine = flag_zuhe(j,:);
     superpixels{row}{j,1}.ind_region = row;
+    superpixels{row}{j,1}.num_hypoth = numel(label_zuhe);
 end

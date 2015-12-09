@@ -16,7 +16,8 @@ else
 end
 [ segpath, ~ ] = getpath( dataset );
 
-raw_dir = dir([segpath(1:end-9), '\*.tif']);
+raw_path = segpath( 1:max(strfind(segpath,'\'))+2 );
+raw_dir = dir([raw_path, '\*.tif']);
 bw_dir = dir([ segpath, '\*.tif' ]); % 初始分割tif图片地址
 
 % 输出超像素图片地址 
@@ -43,10 +44,10 @@ end
 %% 开始循环处理图片 
 nsp = 200; % 200个超像素
 
-for frame=1:6 % length(bw_dir)
+for frame=1:10 % length(bw_dir)
     tic
     % 生成图片地址
-    raw_pic = [segpath(1:end-9), '\', raw_dir(frame).name];
+    raw_pic = [raw_path, '\', raw_dir(frame).name];
     bw_pic = [segpath, '\', bw_dir(frame).name];
     disp(['  处理',raw_pic ]);
     % 生成标签图片和超像素cell

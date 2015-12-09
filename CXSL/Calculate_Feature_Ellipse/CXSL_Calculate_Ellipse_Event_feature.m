@@ -12,7 +12,7 @@
 %
 % =========================================================================
 clear;close all
-if 1
+if 0
     dataset = 'competition';
 else
     dataset = 'training';
@@ -21,8 +21,8 @@ end
 
 pre_data_addr = [ trackpath, '\Pair\Pre_data_New.mat'];
 
-last = max(strfind(trackpath, '\'));
-rawpic_addr = trackpath(1:last+2);  % 需要给出原始图片的地址
+last = max(strfind(segpath, '\'));
+rawpic_addr = segpath(1:last+2);  % 需要给出原始图片的地址
 % 原始维度特征
 mkdir([trackpath, '\结构化学习']);
 Feature_New_addr = [ trackpath, '\结构化学习\Feature_New.mat'];
@@ -109,7 +109,7 @@ for t=1:frame-1
             father = Ellipse{t}{j};
             
             % 灰度和差异
-            diff_intensity_sum = father.feature.intensity.mean - son1.feature.intensity.sum - son2.feature.intensity.sum;
+            diff_intensity_sum = father.feature.intensity.sum - son1.feature.intensity.sum - son2.feature.intensity.sum;
             % 角度，使用向量内积来求角度
             v1 = son1.feature.geo.position - father.feature.geo.position;
             v2 = son2.feature.geo.position - father.feature.geo.position;
@@ -298,48 +298,5 @@ save(Feature_New_addr, 'feature_fid','feature_fij','feature_fit','feature_fiv','
 % 增广特征另存一下
 save(Feature_Plus_New_addr, 'feature_fid_p','feature_fij_p','feature_fit_p','feature_fiv_p','feature_fmj_p','feature_fsj_p');
 
-     
-        
- 
-%% 这个函数用于计算2个椭圆的最小凸包多边形的面积
-% 主要利用内置函数 convhull 进行计算
-if 0 
-% function Area = CX_Convhull(e1, e2)
-     
-% 先计算e1的圆周点，取361即可
-alpha1 = e1.alpha;
-a = e1.a;
-b = e1.b;
-x0 = e1.x0;
-y0 = e1.y0;
 
-c=cosd(alpha1);
-s=sind(alpha1);
-polar_angle=linspace(0,360,50);
-xq= a*cosd(polar_angle);
-yq= b*sind(polar_angle);
-xn1=xq*c-yq*s+x0;
-yn1=xq*s+yq*c+y0;
-
-% 再计算e2的圆周点，取20即可
-alpha1 = e2.alpha;
-a = e2.a;
-b = e2.b;
-x0 = e2.x0;
-y0 = e2.y0;
-
-c=cosd(alpha1);
-s=sind(alpha1);
-polar_angle=linspace(0,360,50);
-xq= a*cosd(polar_angle);
-yq= b*sind(polar_angle);
-xn2=xq*c-yq*s+x0;
-yn2=xq*s+yq*c+y0;
-
-xx = [xn1 xn2];
-yy = [yn1 yn2];
-
-[~, Area] = convhull(xx, yy);       
-        
-end
 

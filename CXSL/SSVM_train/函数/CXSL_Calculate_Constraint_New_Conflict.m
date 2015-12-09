@@ -11,6 +11,13 @@ function [ Ffull Fbase ] = CXSL_Calculate_Constraint_New_Conflict( dataset, use_
 % 载入数据，可以选择载入训练集或测试集上的数据
 Pre_data_addr = [ trackpath, '\Pair\Pre_data_New.mat' ];  
 load( Pre_data_addr);
+if exist('SuperPixel','var') % 如果用的是超像素，就采用赋值
+    disp('  采用的是SuperPixel假说！');
+    Ellipse = SuperPixel;
+    clear SuperPixel
+end
+    
+    
 
 F1 = [];
 F2 = [];
@@ -251,19 +258,21 @@ for t = s_frame:e_frame-1
             continue;
         end
         
-        n_danduan = numel(Ellipse{t}{j}.flag_combine);
-        if n_danduan==1
+        n_basic = numel(Ellipse{t}{j}.flag_combine);
+        if n_basic==1
             j = j + 1;
             continue;
         end
+        
         % 这一部分求出j到j+jplus都属于同一前景
-%         jplus = Ellipse{t}{j}.num_hypoth - 1;
-        jplus = 1;
-        % j+jplus不能超过总数
-        while j+jplus<=numel(Ellipse{t}) && Ellipse{t}{j+jplus}.ind_region == Ellipse{t}{j}.ind_region
-            jplus = jplus + 1;
-        end
-        jplus = jplus - 1;
+        jplus = Ellipse{t}{j}.num_hypoth - 1;
+        % 下面这段实现相同的功能，但代码复杂
+%         jplus = 1;
+%         % j+jplus不能超过总数
+%         while j+jplus<=numel(Ellipse{t}) && Ellipse{t}{j+jplus}.ind_region == Ellipse{t}{j}.ind_region
+%             jplus = jplus + 1;
+%         end
+%         jplus = jplus - 1;
         %##################### j到j+jplus为一个前景 ####################
             
         %% A. 此处添加一个多目标前景至少要有一个入口的条件
@@ -335,7 +344,7 @@ for t = s_frame:e_frame-1
             cc = 1; % 用于计数
             for uu=j:j+jplus-1
                 for vv=uu+1:j+jplus
-                    if ~isequal( Ellipse{t}{uu}.flag_combine & Ellipse{t}{vv}.flag_combine, zeros(1,n_danduan)) % 相与不为0则将其加入矛盾集
+                    if ~isequal( Ellipse{t}{uu}.flag_combine & Ellipse{t}{vv}.flag_combine, zeros(1,n_basic)) % 相与不为0则将其加入矛盾集
                         conflict_New(cc,:) = [uu vv]; % 每一行是一个两两矛盾
                         cc = cc + 1;
                     end
@@ -351,13 +360,13 @@ for t = s_frame:e_frame-1
         % ----------------------------------------------------------- %
         if ~use_22_cons % 旧方法有些错误，并不能包含所有的矛盾集合（第一行的for就有问题） 2015.7.7已修复（通过在 CX_Ellipse_Optimal 中加入排序）
 
-            danduan_flag = eye(n_danduan); % 单位阵
+            danduan_flag = eye(n_basic); % 单位阵
 
-            for uu=1:n_danduan % 遍历单位阵的每一行
+            for uu=1:n_basic % 遍历单位阵的每一行
                 conflict{t}{j,uu} = [];
                 for vv=j:j+jplus % 遍历一个前景
                     % 相与不为0则将其加入矛盾集
-                    if ~isequal( danduan_flag(uu,:) & Ellipse{t}{vv}.flag_combine, zeros(1,n_danduan)) 
+                    if ~isequal( danduan_flag(uu,:) & Ellipse{t}{vv}.flag_combine, zeros(1,n_basic)) 
                         conflict{t}{j,uu} = [conflict{t}{j,uu}, vv];
                     end
                 end
@@ -384,7 +393,7 @@ for t = s_frame:e_frame-1
                         % 矛盾集全体出口和
                         conflict_sum_out = conflict_sum_out + this_out;
                     end
-                    F3 = [ F3, conflict_sum_out <= 1 ];   %%出口唯一
+                    F3 = [ F3, conflict_sum_out <= 1 ];   % 出口唯一
                     % ----------------------------------------------- %
                 else
                     % ----------------------------------------------- %

@@ -12,7 +12,7 @@ clear;close all;
 dataset = 'training'; % 这个脚本一般只在训练集中使用
 [ segpath trackpath ] = getpath( dataset );
 
-load([ trackpath, '\Pair\Pre_data_New.mat'], 'Ellipse','candidate_k_last','candidate_k_next','n','candidate_fij');
+load([ trackpath, '\Pair\Pre_data_New.mat'],'candidate_k_last','candidate_k_next','n','candidate_fij');
 % 载入标准答案GT
 load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
 % 载入特征（不包含增广）
@@ -246,10 +246,6 @@ num_n_s = num_n_s -1; % 负样本数目
 
 [ wmj bmj ] = CXSL_SVM_new( positive_sample, negative_sample, feature_fmj, 1/3);
 % bmj = bmj + 1;
-if wmj==0 % 若没有该类型样本，则w会变为0，需要另外设置
-    wmj = [zeros(size(feature_fmj{2}{1}))'];
-    bmj = 0;
-end
 
 % 使用ssvm训练的w来测试，看是否线性可分，从而决定是否采用核函数 2015.10.13
 if 0
@@ -296,25 +292,14 @@ num_p_s = num_p_s -1; % 正样本数目
 num_n_s = num_n_s -1; % 负样本数目
 
 [ wiv biv ] = CXSL_SVM_new( positive_sample, negative_sample, feature_fiv, 1/3);
-% biv = biv + 1
-if wiv==0 % 若没有该类型样本，则w会变为0，需要另外设置
-    wiv = [zeros(size(feature_fiv{2}{1}))'];
-    biv = 0;
-end
+
 % 使用ssvm训练的w来测试，看是否线性可分，从而决定是否采用核函数 2015.10.13
 if 0
     test_linear_using_ssvm_result( 'fsj', positive_sample, negative_sample );
 end
 
-%% 提取虚景 false detetion 样本（暂时不用）
-
-positive_sample = [];
-negative_sample = [];
-num_p_s = 1;
-num_n_s = 1;
-
 %% 保存各细胞事件的w
-if 0
+if 1
     save([ trackpath, '\结构化学习\initial_w_New.mat'],...
         'wij', 'wit', 'wid', 'wiv', 'wmj', 'wsj',...
         'bij', 'bit', 'bid', 'biv', 'bmj', 'bsj');

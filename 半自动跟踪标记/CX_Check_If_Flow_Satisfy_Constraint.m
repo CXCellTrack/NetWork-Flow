@@ -10,21 +10,20 @@
 
 clear;close all;
 % 载入GT流程变量（主要检查这个）  载入pre_data
-if 1
+if 0
     dataset = 'competition';
 else
     dataset = 'training';
 end
 [ ~, trackpath ] = getpath( dataset );
-trackpath = 'E:\datasets\first_edition\training_datasets\N2DL-HeLa\01_2-16_track';
 
 % 使用全局变量
 global Fij Fit Fid Fiv Fmj Fsj;
 global conflict_fij conflict_pair_last_xy conflict_pair_next_xy n;
 
-load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
+load([ trackpath, '\GT\GT_Flow_Variables_New.mat']);
 load([ trackpath, '\Pair\Pre_data_New.mat'], 'conflict_fij','conflict_pair_last_xy','conflict_pair_next_xy','n','Ellipse');
-frame = numel(n);
+frame = numel(Fsj);
 
 %% 开始检查：主要是入口出口守恒
 

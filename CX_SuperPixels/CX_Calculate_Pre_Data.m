@@ -25,7 +25,7 @@ sp_path = [segpath, '\超像素灰度标签\SuperPixel.mat'];
 load( sp_path );
 
 frame = numel(SuperPixel);
-frame = 6;
+frame = sum(~isemptycell(SuperPixel));
 
 % 统计每帧的变量数目
 n = cellfun(@numel,SuperPixel);

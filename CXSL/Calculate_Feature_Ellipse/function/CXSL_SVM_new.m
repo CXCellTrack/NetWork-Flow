@@ -8,10 +8,19 @@ for i=1:num_p_s
     e_info = positive_sample(i,:);
     all_feature{i,1} = feature{e_info(1)}{e_info(2), e_info(3)}';
 end
+
 for i=1:num_n_s
     e_info = negative_sample(i,:);
     all_feature{i+num_n_s,1} = feature{e_info(1)}{e_info(2), e_info(3)}';
 end
+
+if num_p_s<=2 || num_n_s<=2 % 如果正负样本太少，则返回0（通常是没有正样本）
+    W = zeros(size(feature{e_info(1)}{e_info(2), e_info(3)}))';
+    B = 0;
+    disp('  缺少足够的样本，分类无法进行！')
+    return
+end
+
 all_feature = cell2mat(all_feature);
 all_label = [ones(num_p_s,1); -ones(num_n_s,1)];
 

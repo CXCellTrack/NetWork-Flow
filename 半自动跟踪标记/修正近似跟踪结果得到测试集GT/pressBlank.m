@@ -1,5 +1,5 @@
 function pressBlank( hObject, eventdata, handles)
-%UNTITLED5 Summary of this function goes here
+%
 %   Detailed explanation goes here
 global GT_move GT_delete global_x t;
 

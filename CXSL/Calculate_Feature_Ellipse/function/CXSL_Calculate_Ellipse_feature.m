@@ -1,6 +1,7 @@
 function  e = CXSL_Calculate_Ellipse_feature( e, dataset_addr )
 % structured learing部分——特征提取
-%   Detailed explanation goes here
+% 提取单个椭圆所包含的特征 
+%
 frame = numel(e);
 raw_dir = dir([ dataset_addr, '\*.tif' ]);
 
@@ -40,8 +41,8 @@ function [ intensity ] = Cal_Intensity_feature(e1, im)
 %
 bins = 16; % 直方图的通道数目
 [h, w] = size(im);
-% pixellist 用于记录椭圆内的点灰度值（以后也可以连坐标一起记录！2015.6.29）
-pixellist = [];
+% pixelinten 用于记录椭圆内的点灰度值（以后也可以连坐标一起记录！2015.6.29）
+pixelinten = [];
 
 c1=sqrt(e1.a^2-e1.b^2);   %%焦距
 cc1=cosd(e1.alpha);
@@ -60,15 +61,15 @@ for x=e1.x0-e1.a : e1.x0+e1.a
         if sqrt((x-c11(1))^2+(y-c11(2))^2)+sqrt((x-c12(1))^2+(y-c12(2))^2)<=2*e1.a
             % 保存椭圆内的点灰度值
             count = count + 1;
-            pixellist(count) = im(yy,xx);
+            pixelinten(count) = im(yy,xx);
         end
     end
 end
 
-intensity.hist = hist(pixellist, bins)'/count;
-intensity.sum = sum(pixellist);
-intensity.mean = mean(pixellist);
-intensity.devia = std(pixellist);
+intensity.hist = hist(pixelinten, bins)'/count;
+intensity.sum = sum(pixelinten);
+intensity.mean = mean(pixelinten);
+intensity.devia = std(pixelinten);
 
 end
 
