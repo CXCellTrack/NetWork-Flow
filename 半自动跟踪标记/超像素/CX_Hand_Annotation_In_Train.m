@@ -25,14 +25,21 @@ else
 end
 [ ~, trackpath ] = getpath( dataset );
 
-fig_path = [ trackpath, '\???\'];
-if strcmp(dataset, 'training')
-    fig_path = [ trackpath, '\GT\label_and_e\'];
-end
-screen_size = get(0,'ScreenSize');
+% 载入标记底板 label_and_e图片
+fig_path = [ trackpath, '\GT\label_and_e\'];
 fig_dir = dir([ fig_path, '*.fig' ]);  
 frame = numel(fig_dir);
 
+% 载入直接计算好的label2e，如果没有则从新计算
+label2e_path = [ trackpath, '\GT\Label_to_Ellipse.mat'];
+if exist(label2e_path,'file')
+    load(label2e_path, 'label2e');
+else
+    generate_label2e(); % 生成label2e图片
+end
+
+% 载入superpixel
+load([trackpath, '\Pair\Pre_data_New.mat'],'SuperPixel');
 
 % 定义全局变量 GT_move 存储标准迁移答案
 % 定义全局变量 GT_delete 存储当前标记中需要要被删去的事件
@@ -51,17 +58,15 @@ else
 end
 
 
-for t = 1:5 %frame-1 %
-
+for t = 1:1 %frame-1 %
+    
     % 先清空这2个，防止后续修改时出错
     GT_move{t} = cell(100,4); % 预留20行应该够用的
     GT_delete{t} = {};
     
     % 打开2副相邻图片
     for ss = t:t+1
-        fig_name = [ fig_path, fig_dir(ss).name ];
-        openfig(fig_name, 'new', 'visible');
-        set(gcf, 'Position', screen_size);
+        open_fig_and_color_not_labeled( label2e, SuperPixel, fig_dir, ss );
     end
     % 取得figure内椭圆的句柄e1,e2
     h1 = get(1, 'children');
@@ -74,8 +79,8 @@ for t = 1:5 %frame-1 %
     global_y = 1;
     set(1, 'keypressfcn', @press_c_space); % 按空格键负责换行
     set(2, 'keypressfcn', @press_c_space); % 按c确认组合csp的basp选择完毕
-    set(e1, 'ButtonDownFcn', @myclick_1);
-    set(e2, 'ButtonDownFcn', @myclick_2);
+    set(e1, 'ButtonDownFcn', @myclick);
+    set(e2, 'ButtonDownFcn', @myclick);
 
     disp(['  正在标记',num2str(t),'—',num2str(t+1),'帧']);
     

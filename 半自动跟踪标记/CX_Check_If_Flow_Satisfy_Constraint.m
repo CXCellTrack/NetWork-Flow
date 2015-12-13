@@ -21,9 +21,10 @@ end
 global Fij Fit Fid Fiv Fmj Fsj;
 global conflict_fij conflict_pair_last_xy conflict_pair_next_xy n;
 
-load([ trackpath, '\GT\GT_Flow_Variables_New.mat']);
+load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
 load([ trackpath, '\Pair\Pre_data_New.mat'], 'conflict_fij','conflict_pair_last_xy','conflict_pair_next_xy','n','Ellipse','SuperPixel');
 frame = numel(Fsj);
+frame = 10;
 
 %% 开始检查：主要是入口出口守恒
 
@@ -44,8 +45,14 @@ for t=2:frame-1
             % 其他特殊情况如，如双入口单出口等
             disp(eventIn);
             disp(eventOut);
-            error(['第', num2str(t), '帧编号为', num2str(j), '的椭圆入口为',num2str(sum_enter),'，但出口为',num2str(sum_leave),...
-                '；  坐标：',num2str([Ellipse{t}{j}.x0, Ellipse{t}{j}.y0])]);
+            
+            if exist('SuperPixel','var')
+                error(['第', num2str(t), '帧编号为', num2str(j), '的超像素入口为',num2str(sum_enter),'，但出口为',num2str(sum_leave),...
+                '；  坐标：',num2str(SuperPixel{t}{j}.centroid)]);
+            else
+                error(['第', num2str(t), '帧编号为', num2str(j), '的椭圆入口为',num2str(sum_enter),'，但出口为',num2str(sum_leave),...
+                    '；  坐标：',num2str([Ellipse{t}{j}.x0, Ellipse{t}{j}.y0])]);
+            end
         end
         
     end
