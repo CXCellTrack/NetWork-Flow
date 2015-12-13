@@ -43,28 +43,29 @@ else
 end
 %% 开始循环处理图片 
 nsp = 200; % 200个超像素
+rm_small = 80; % 除去小于80像素的label
 
-for frame=1:10 % length(bw_dir)
+for frame=1:length(bw_dir)
     tic
     % 生成图片地址
     raw_pic = [raw_path, '\', raw_dir(frame).name];
     bw_pic = [segpath, '\', bw_dir(frame).name];
     disp(['  处理',raw_pic ]);
     % 生成标签图片和超像素cell
-    [ SP, new_labels, maskim, RGB_label ] = CX_Generate_SP_in_1( raw_pic, bw_pic, nsp );
-    
+    [ SP, new_labels, maskim, RGB_label ] = CX_Generate_SP_in_1( raw_pic, bw_pic, nsp, rm_small );
+    toc
     % 保存得到的图片
     disp('  保存结果');
     savename1 = [ output_addr1, bw_dir(frame).name(1:end-4), '_sp.png' ];
     imwrite(uint16(new_labels), savename1);
     savename2 = [ output_addr2, bw_dir(frame).name(1:end-4), '_sp_color.png' ];
     imwrite(RGB_label, savename2);
-    savename3 = [ output_addr3, bw_dir(frame).name(1:end-4), '_sp.png' ];
+    savename3 = [ output_addr3, bw_dir(frame).name(1:end-4), '_sp_grid.png' ];
     imwrite(maskim, savename3);
     % 保存超像素假说数据
     SuperPixel{frame} = SP;
     save(SP_addr, 'SuperPixel');
-    toc
+
 end
 
 

@@ -33,7 +33,7 @@
 % 6. Overall, the advantages are likely to outweigh the small disadvantages
 % for most applications of superpixels.
 %======================================================================
-function [ SP, new_labels, maskim, RGB_label ] = CX_Generate_SP_in_1( raw_pic, bw_pic, nsp )
+function [ SP, new_labels, maskim, RGB_label ] = CX_Generate_SP_in_1( raw_pic, bw_pic, nsp, rm_small )
 
 
 % 读入图片
@@ -70,9 +70,12 @@ for row=1:numel(raw_stats)
 %         labels(labels==row) = 0;
 %     end
     
-    % 还是采用统计黑色点比例的方法比较好
-    percent = sum(raw_stats(row).PixelValues==0)/numel(raw_stats(row).PixelValues);
-    if percent>=0.8 % 黑色比例大于80%，则将其置0
+    % 还是采用统计黑色点比例的方法比较好（2015.12.10改为统计非黑点个数的方法）
+%     percent = sum(raw_stats(row).PixelValues==0)/numel(raw_stats(row).PixelValues);
+%     if percent>=0.8 % 黑色比例大于80%，则将其置0
+%         labels(labels==row) = 0;
+%     end
+    if sum(raw_stats(row).PixelValues~=0)<rm_small % 非黑点太少，则全部置0
         labels(labels==row) = 0;
     end
 end
@@ -92,9 +95,9 @@ while has_small % 若有，则不断执行删除操作（删除可能会导致区域发生变化，因此要用
             continue;
         end
         % 检查是否为单区域
-        templ = zeros(size(labels));
-        templ(labels==row) = 1; % imshow(templ) 单独查看该label区域
-        [L, n_region] = bwlabel(templ, 4);
+        bb = zeros(size(labels));
+        bb(labels==row) = 1; % imshow(bb) 单独查看该label区域
+        [L, n_region] = bwlabel(bb, 4);
         if n_region==1 % 如果还是一个联通区域，则跳过
             continue
         end
@@ -108,7 +111,7 @@ while has_small % 若有，则不断执行删除操作（删除可能会导致区域发生变化，因此要用
     for row=unique(labels)'
         % ---------------------------------------- %
         % 去除太小的label
-        if sum(sum(labels==row))<50 
+        if sum(sum(labels==row))<rm_small 
             has_small = true;
             labels(labels==row) = 0;
         end
@@ -187,16 +190,16 @@ for row=1:numel(label_nearby)
 end
 
 %% superpixels 行号为前景编号，存储假说信息（类似ellipse）
-stats = regionprops(new_labels, 'pixellist');
+bsp_stats = regionprops(new_labels, 'pixellist');
 superpixels =  cell(size(foreground));
 for row=1:numel(superpixels) % i代表前景编号
     % 生成所有的组合情况
     fore = foreground{row};
     [ label_zuhe, flag_zuhe ] = generate_csp( fore );
     % 组合中有些是不相邻的，要去掉
-    [ label_zuhe flag_zuhe ] = delete_combined_sp( fore, label_nearby, label_zuhe, flag_zuhe );
+    [ label_zuhe flag_zuhe ] = delete_uncombined_sp( fore, label_nearby, label_zuhe, flag_zuhe, bsp_stats, new_labels );
     % 对每个假说计算信息（相当于椭圆中的信息）
-    superpixels = calculate_sp_info( row, label_zuhe, flag_zuhe, stats, superpixels );
+    superpixels = calculate_sp_info( row, label_zuhe, flag_zuhe, bsp_stats, superpixels );
 end
 
 % 将 superpixels 拉直成一列

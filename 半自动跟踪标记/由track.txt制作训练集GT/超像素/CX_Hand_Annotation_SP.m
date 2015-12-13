@@ -15,7 +15,6 @@ gtpath = [segpath(1:last+2), '_GT\TRA\'];
 gt_dir = dir([gtpath, '*.tif']); % gt图片的位置
 
 frame = numel(gt_dir);
-frame = 10;
 
 % fig操作标记的图片
 fig_path = [trackpath,'\GT\label_and_e\'];
@@ -63,7 +62,7 @@ screen_size = get(0,'ScreenSize');
 %% 进行半自动标记
 global tmp_label2e global_x global_y last_click;
 
-for t=3:frame % 对frame中有，但目前标记中没有的进行标记
+for t=58:frame % 对frame中有，但目前标记中没有的进行标记
     for j=1:n(t)
         center_sp{t}(j,:) = SuperPixel{t}{j}.centroid;
     end
@@ -138,7 +137,7 @@ for t=3:frame % 对frame中有，但目前标记中没有的进行标记
     for i_row=1:size(tmp_label2e,1)
         row = tmp_label2e(i_row,:);
         tmp = row(row~=0);
-        this_sp = tmp(2:end);
+        this_sp = unique(tmp(2:end)); % 防止同个bsp被选2次，因此加上unique
         flag = cellfun(@(x) isequal(sort(this_sp), sort(x.label)), SuperPixel{t});
         assert(any(flag==1)) % 断言一定能找到那个label组合
         label2e{t}(row(1),1) = find(flag);

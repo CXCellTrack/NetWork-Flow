@@ -22,7 +22,7 @@ global Fij Fit Fid Fiv Fmj Fsj;
 global conflict_fij conflict_pair_last_xy conflict_pair_next_xy n;
 
 load([ trackpath, '\GT\GT_Flow_Variables_New.mat']);
-load([ trackpath, '\Pair\Pre_data_New.mat'], 'conflict_fij','conflict_pair_last_xy','conflict_pair_next_xy','n','Ellipse');
+load([ trackpath, '\Pair\Pre_data_New.mat'], 'conflict_fij','conflict_pair_last_xy','conflict_pair_next_xy','n','Ellipse','SuperPixel');
 frame = numel(Fsj);
 
 %% 开始检查：主要是入口出口守恒
