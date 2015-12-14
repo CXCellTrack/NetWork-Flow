@@ -3,6 +3,9 @@ function myclick( hObject, eventdata, handles )
 %   
 global GT_move global_x global_y t;
 
+if gcf==1 && isempty(GT_move{t}{global_x,1}) % 图1第一次点击的时候，1号cell肯定是空，此时给global_y赋值
+    global_y = 1;
+end
 if gcf==2 && isempty(GT_move{t}{global_x,3}) % 图2第一次点击的时候，3号cell肯定是空，此时给global_y赋值
     global_y = 3;
 end

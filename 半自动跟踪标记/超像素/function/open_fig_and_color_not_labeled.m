@@ -1,12 +1,20 @@
 function open_fig_and_color_not_labeled( label2e, SuperPixel, fig_dir, t )
 
 [ ~, trackpath ] = getpath( 'training' );
+% 调正幅图的大小
 screen_size = get(0,'ScreenSize');
+first_pos = [1, 50, screen_size(3)/2, screen_size(4)-130];
+second_pos = [screen_size(3)/2, 50, screen_size(3)/2, screen_size(4)-130];
 
 % 载入图片
 openfig( [ trackpath, '\GT\label_and_e\', fig_dir(t).name] );
-set(gcf, 'Position', screen_size);
+if gcf==1
+    set(gcf, 'Position', first_pos);
+elseif gcf==2
+    set(gcf, 'Position', second_pos);
+end
 
+set(gca, 'position',[0 0 1 1]);
 h = get(gcf, 'children');
 % ------------------------------------------------------------------- %
 % 将没被自动标记上的椭圆绘制为红色，*点绘制为蓝色，以加强视觉区分

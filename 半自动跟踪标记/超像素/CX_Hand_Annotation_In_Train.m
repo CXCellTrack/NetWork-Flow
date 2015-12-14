@@ -54,14 +54,14 @@ if exist(handGt, 'file')
 else
     GT_move = cell(frame-1,1);
     GT_delete = cell(frame-1,1);
-    
 end
 
+%% 进行标记
 
-for t = 1:1 %frame-1 %
+for t = 2:2 %frame-1 % 2015.12.14将fluo训练集标记完成
     
     % 先清空这2个，防止后续修改时出错
-    GT_move{t} = cell(100,4); % 预留20行应该够用的
+    GT_move{t} = cell(100,5); % 预留20行应该够用的
     GT_delete{t} = {};
     
     % 打开2副相邻图片
@@ -86,9 +86,10 @@ for t = 1:1 %frame-1 %
     
     % 通过input操作来给标记留出时间
     keyin = input('  在控制台上按enter键进入下两帧\n', 's');
-    if strcmp(keyin, '')
+    if strcmp(keyin, '')        
         close(1);
         close(2);
+        
     end
     
     if 1

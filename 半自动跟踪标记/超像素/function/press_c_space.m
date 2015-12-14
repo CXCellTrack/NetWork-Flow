@@ -7,14 +7,20 @@ keyPress = get(gcf, 'currentcharacter');
 
 if keyPress=='c'
     % 按下'c'则此bsp记录完毕，光标右移
-    msgbox('csp choose done!');
+    msgbox('CSP');
     global_y = global_y + 1;
+end
+
+if keyPress=='s'
+    % 按下's'则确认当前行为split记录
+    msgbox('split');
+    GT_move{t}{global_x,5} = 'split';
 end
 
 % 第一帧中如果发生了消失事件，则点击椭圆后按下空格键，就会记录
 if keyPress==' '
     % 按下空格则此行记录完毕，需要判断事件
-    abcd = num2str( ~isemptycell(GT_move{t}(global_x,:)) );
+    abcd = num2str( ~isemptycell(GT_move{t}(global_x,1:4)) );
     switch abcd
         case '1  0  0  0'
             msgbox('disappear');
@@ -23,7 +29,11 @@ if keyPress==' '
         case '1  0  1  0'
             msgbox('move');
         case '1  0  1  1'
-            msgbox('divide/split');
+            if isempty(GT_move{t}{global_x,5})
+                msgbox('divide');
+            else
+                msgbox('split');
+            end
         case '1  1  1  0'
             msgbox('merge');
         otherwise

@@ -12,6 +12,8 @@ sum_fij = 0;
 sum_fid = 0;
 sum_fiv = 0;
 sum_fmj = 0;
+eventIn = zeros(1,6);
+eventOut = zeros(1,6);
 
 if t>1 % 第一帧没有入口
     % sum_fij 为所有迁移到 j 的fij之和（入口和），出口和可以用 sum(fij{t}(j,:)) 表示 

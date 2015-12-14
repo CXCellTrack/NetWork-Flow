@@ -47,7 +47,7 @@ for t=1:numel(GT_move)
     for ind=1:size(GT_move{t},1)
         % 找到一行记录的内容
         rowdata = GT_move{t}(ind,:);
-        if isequal(rowdata, cell(1,4)) % 这一行为空记录则跳出循环
+        if isequal(rowdata(1:4), cell(1,4)) % 这一行为空记录则跳出循环
             break;
         end
 
@@ -60,7 +60,7 @@ for t=1:numel(GT_move)
             end
             % 找到bsp对应的csp编号
             csp_j = find( cellfun(@(x) isequal(sort(x.label), sort(bsp_j)), SuperPixel{t},'un',1) );
-            
+            assert( ~isempty(csp_j) );
             % 1 迁移出口置0
             Fij_c{t}(csp_j,:) = zeros(1,4);
             % 2 divide/split出口置0
@@ -84,7 +84,7 @@ for t=1:numel(GT_move)
             end
             % 找到bsp对应的csp编号
             csp_k = find( cellfun(@(x) isequal(sort(x.label), sort(bsp_k)), SuperPixel{t+1},'un',1) );
-            
+            assert( ~isempty(csp_k) );
             % 1 迁移入口置0
             uu = conflict_fij{t}{csp_k};
             for i=1:size(uu,1)
@@ -142,9 +142,16 @@ for t=1:numel(GT_move)
                 end
                 % 判断是否在四邻域内找到了[k1 k2]
                 if mmtrue
-                    Fid_c{t}(j1,mmtrue) = 1;
-                    disp([ '  第', num2str(t), '帧的', num2str(j1), '分裂为',...
-                        '第', num2str(t+1), '帧的', num2str(k1), '和', num2str(k2)]);
+                    % rowdata{5}是区分divide和split的标志位（默认空为divide）
+                    if length(rowdata)==4 || isempty(rowdata{5})
+                        Fid_c{t}(j1,mmtrue) = 1;
+                        disp([ '  第', num2str(t), '帧的', num2str(j1), 'divide为',...
+                            '第', num2str(t+1), '帧的', num2str(k1), '和', num2str(k2)]);
+                    else
+                        Fiv_c{t}(j1,mmtrue) = 1;
+                        disp([ '  第', num2str(t), '帧的', num2str(j1), 'split为',...
+                            '第', num2str(t+1), '帧的', num2str(k1), '和', num2str(k2)]);
+                    end
                 else
                     msgbox(['  GT_move的第',num2str(t),'帧第',num2str(ind),'行的divide/split标记无法在候选椭圆中找到！已修改'])
                     candidate_k_next{t}{j1,1} = [k1 k2];

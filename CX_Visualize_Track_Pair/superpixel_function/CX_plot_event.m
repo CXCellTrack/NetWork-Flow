@@ -1,6 +1,6 @@
 function CX_plot_event( e ,char)
-%UNTITLED Summary of this function goes here
-%   Detailed explanation goes here
+%
+% 
 x0 = e.x0;
 y0 = e.y0;
 switch char  
