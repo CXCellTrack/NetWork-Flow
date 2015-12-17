@@ -23,7 +23,7 @@ segdir = dir([ segpath, '\*.tif']);
 s_frame = 1;
 e_frame = numel(segdir);
 % 指定是否存在GT，如果存在，则计算精度等指标，否则不需要算
-exist_GT = 1;
+exist_GT = 0;
 disp(['  计算 ',num2str(s_frame), '—',num2str(e_frame), ' 帧的目标函数和约束条件...']);
 
 %% 计算约束条件 注意：不包含损失函数
@@ -46,13 +46,13 @@ end
 
 %% 组建目标函数
 [ ~, traintrackpath ] = getpath( 'training' );
-if 1
+if 0
     if 0
         disp('  载入之前 SSVM 训练得到的最佳 w...');
         load([ traintrackpath, '\结构化学习\SSVM_Best_W_New.mat']);
     else % 想要复现 excel 中记载的以前的实验结果，只需要手动填写 w_best 即可
         disp('  载入手动填写的w...');
-        thisfile = 'BCFW\loss_5_13_cons35_cost1_init0p_noline_rng.mat';
+        thisfile = 'BCFW\loss_5_13_cons35_cost1_initw_line.mat';
         load([ traintrackpath, '\训练结果记录\', thisfile ], 'w_best','use_op_cons','Wavg');
 %         w_best = Wavg{394};
 %         if ~isequal(use_op_cons, use_op_cons_test)
@@ -140,8 +140,6 @@ if 0
     save(matpath, 'PRF','COUNT','Fij','Fit','Fid','Fiv','Fmj','Fsj'); % 注意修改mat名称
     file = fopen(strrep(matpath,'mat','txt'), 'w'); fclose(file);
 end
-
-
 
 
 

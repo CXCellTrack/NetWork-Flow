@@ -8,7 +8,7 @@
 
 clear;close all;
 
-if 0
+if 1
     dataset = 'competition'; % 选择训练还是测试
 else
     dataset = 'training';
@@ -209,7 +209,7 @@ end
 toc;
 
 %% 保存数据到 Pre_data.mat 中
-if 1
+if 0
     disp('  将数据保存在Pair目录下的Pre_data_New中');
     mkdir([trackpath,'\Pair']);
     save([trackpath,'\Pair\Pre_data_New.mat'], 'SuperPixel', 'candidate_k_last',...

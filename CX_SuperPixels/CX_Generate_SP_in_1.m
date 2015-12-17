@@ -37,8 +37,9 @@ function [ SP, new_labels, maskim, RGB_label ] = CX_Generate_SP_in_1( raw_pic, b
 
 
 % 读入图片
-img = imread(raw_pic);
+img = imread(raw_pic); 
 bw = imread(bw_pic);
+bw = bwareaopen(bw, 20); % 去除小物体
 bw = imfill(bw, 'holes');
 
 img(~bw) = 0; % bw欠分割为0的就强制使原始图片也为0
@@ -54,11 +55,10 @@ elseif isa(imga, 'uint8')
     col = 255;
 elseif isa(imga, 'double')
     col = 1;
-end
+end        
 
 % 仅作为图片演示效果（展示分割线）
-maskim = drawregionboundaries(labels, imga, col);
-% imshow(maskim);
+maskim = drawregionboundaries(labels, imga, col); % imshow(maskim);
 
 %% 使用mask改善superpixel的效果
 [h,w] = size(labels);

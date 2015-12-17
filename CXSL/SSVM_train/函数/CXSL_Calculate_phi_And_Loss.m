@@ -14,7 +14,7 @@ dataset = 'training'; % 这个函数也只在训练中使用
 
 load([ trackpath, '\Pair\Pre_data_New.mat'], 'n','conflict_pair_last_xy','conflict_pair_next_xy','conflict_fij');
 % 载入特征
-if numel(w)==40
+if numel(w)>=40
     load([ trackpath, '\结构化学习\Feature_Plus_New.mat']);
     feature_fij = feature_fij_p;
     feature_fit = feature_fit_p;

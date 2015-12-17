@@ -6,7 +6,7 @@
 % =========================================================================
 
 clear;close all
-if 0
+if 1
     dataset = 'competition';
 else
     dataset = 'training';
@@ -24,12 +24,17 @@ Feature_Plus_New_addr = [ trackpath, '\结构化学习\Feature_Plus_New.mat'];
 
 %% 计算单个SP的特征，加入到自身的struct中
 disp('  计算超像素自身特征...');
-tic;
-SPF = CXSL_Calculate_SP_feature( SuperPixel, segpath, n ); % SPF为Superpixel的feature
-toc;
+SPF_path = [ trackpath, '\结构化学习\SPF.mat' ];
+if ~exist(SPF_path,'file')
+    tic;
+    SPF = CXSL_Calculate_SP_feature( SuperPixel, segpath, n ); % SPF为Superpixel的feature
+    toc;
+    save(SPF_path, 'SPF');
+end
+load(SPF_path);
 
 frame = numel(SPF);
-frame = 10;
+% frame = 10;
 
 %% 下面开始计算前后2帧椭圆特征差异
 disp('  计算各细胞事件特征...');
@@ -263,6 +268,6 @@ save(Feature_New_addr, 'feature_fid','feature_fij','feature_fit','feature_fiv','
 % 增广特征另存一下
 save(Feature_Plus_New_addr, 'feature_fid_p','feature_fij_p','feature_fit_p','feature_fiv_p','feature_fmj_p','feature_fsj_p');
 
-% 总维数:    ij   id  sj   it    iv  mj
-d_feature = 12 + 24 + 11 + 11 + 23 + 23;
+% 总维数:    ij   it  id   iv   sj   mj
+d_feature = 12 + 11 + 24 + 23 + 23 + 11
 

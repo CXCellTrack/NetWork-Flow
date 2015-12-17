@@ -12,7 +12,7 @@ end
 dataset = 'training';
 [ ~, trackpath ] = getpath( dataset );
 % 载入特征
-if numel(w)==40
+if numel(w)>=40
     load([ trackpath, '\结构化学习\Feature_Plus_New.mat']);
     feature_fij = feature_fij_p;
     feature_fit = feature_fit_p;

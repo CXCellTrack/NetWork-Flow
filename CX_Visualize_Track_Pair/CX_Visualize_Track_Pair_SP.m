@@ -11,7 +11,7 @@
 clear;close all;
 
 % 指定在哪个数据集上进行计算（train or test）
-if 0
+if 1
     dataset = 'competition';
 else
     dataset = 'training';
@@ -24,7 +24,7 @@ global conflict_fij conflict_pair_last_xy conflict_pair_next_xy n;
 
 load([trackpath, '\Pair\Pre_data_New.mat']);
  
-if 1
+if 0
     disp('  载入真实流程变量数据...');
     load([trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
     output_addr = [trackpath, '\GT\GT_after_hand_tune\'];
@@ -58,7 +58,7 @@ for t = s_frame:e_frame
     pic_name = [ png_addr, png_dir(t).name ];
 %     openfig(fig_name, 'new'); %'invisible'
     origin = imread(pic_name);
-    im = zeros([ size(origin), 3 ]);
+    im = ones([ size(origin), 3 ]);
     eval_str = '';
     
     disp(['  正在处理', pic_name, '...']);
@@ -78,9 +78,9 @@ for t = s_frame:e_frame
         if isfield( SuperPixel{t}{j}, 'color_index' )
             % 如果椭圆含2个颜色，则说明其为merge后迁移来的，绘作白色
             % 注意，这里不能将merge来的上色，因为运行到这里时还没判断是否为merge
-            % merge上色的部分在判断merge处（现在已经可以在这里上色了）
-            assert(numel( SuperPixel{t}{j}.color_index )<=2);
-            if numel( SuperPixel{t}{j}.color_index )==2
+            % merge上色的部分在判断merge处（这里上色的是那些在merge后继续迁移的）
+%             assert(numel( SuperPixel{t}{j}.color_index )<=2);
+            if numel( SuperPixel{t}{j}.color_index )>=2
                 im = CX_fill_color_sp( SuperPixel{t}{j}, im, [1 1 1] ); % 针对merge之后再move的情况
             elseif numel( SuperPixel{t}{j}.color_index )==1
                 im = CX_fill_color_sp( SuperPixel{t}{j}, im, color, SuperPixel{t}{j}.color_index );
@@ -160,7 +160,7 @@ for t = s_frame:e_frame
     end
 
     % 因为im在不断改变，因此画图语句放入eval_str中，等im不变后再画图（2015.12.14机智！）
-    im = drawregionboundaries(origin, im, [1 1 1]); % 画上原始分割线
+    im = drawregionboundaries(origin, im, [0 0 0]); % 画上原始分割线
     imshow(im);hold on;
     eval(eval_str);hold off; 
     

@@ -49,13 +49,13 @@ end
 center_sp = cell(frame,1); % 保存SP的中心点
 distance = cell(frame,1); % 用来保存SP到*的距离
 
-
-%% 进行半自动标记
+%% 自动标记简单的超像素
 
 for t=1:frame % 对frame中有，但目前标记中没有的进行标记
     for j=1:n(t)
         center_sp{t}(j,:) = SuperPixel{t}{j}.centroid;
     end
+    
     %% 单假说前景进行自动标记，每个*找到离自己最近的椭圆
     distance{t} = dist(center_sp{t}, center_gt{t}'); 
     

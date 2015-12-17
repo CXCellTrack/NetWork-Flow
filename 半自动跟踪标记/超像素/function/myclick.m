@@ -12,20 +12,22 @@ end
 
 
 % 第一个图的操作只出现在前2列
-if strcmp( get(gco, 'Type'), 'line') && ~strcmp( get(gco, 'marker'), '*') % 必须选中线才进行操作而不是*
+if strcmp( get(gco, 'Type'), 'line') && strcmp( get(gco, 'linestyle'), '-') % 必须选中线才进行操作而不是*
     
-    if strcmp(get( gco, 'Selected' ), 'off') % 如果线处于未选中状态，则选中它
+    % 如果线处于选中状态，且位于当前cell内，则取消选中
+    if strcmp(get( gco, 'Selected' ), 'on') && ~isempty(GT_move{t}{global_x,global_y}) && GT_move{t}{global_x,global_y}(end)==str2double(get(gco,'DisplayName'))
+        
+        set( gco, 'Selected', 'off' );
+        GT_move{t}{global_x,global_y} = GT_move{t}{global_x,global_y}(1:end-1); % 删去csp中的最后一个
+        if isempty( GT_move{t}{global_x,global_y} )
+            msgbox('CSP已清空');
+        end
+        
+    else % 如果未选中，则选中并记录
         set( gco, 'Selected', 'on' );
         % 写入当前位置
-        GT_move{t}{global_x,global_y} = [ GT_move{t}{global_x,global_y}, str2double(get(gco, 'DisplayName')) ];
-        
-    else % 如果已被选中，则取消选中状态(必须要位于当前cell内才能被取消)
-        if any( GT_move{t}{global_x,global_y}==str2double(get(gco,'DisplayName')) )
-            set( gco, 'Selected', 'off' );
-            GT_move{t}{global_x,global_y} = GT_move{t}{global_x,global_y}(1:end-1); % 删去csp中的最后一个
-            if isempty( GT_move{t}{global_x,global_y} )
-                msgbox('CSP已清空');
-           end 
+        if all(GT_move{t}{global_x,global_y}~=str2double(get(gco, 'DisplayName')))
+            GT_move{t}{global_x,global_y} = [ GT_move{t}{global_x,global_y}, str2double(get(gco, 'DisplayName')) ];
         end
         
     end

@@ -17,8 +17,6 @@ if exist('SuperPixel','var') % 如果用的是超像素，就采用赋值
     clear SuperPixel
 end
     
-    
-
 F1 = [];
 F2 = [];
 Fop1 = [];
@@ -111,16 +109,16 @@ tic
 
 %% 可选约束1
 %################################################################
-% 针对数据集3（Fluo-N2DH-SIM+）的约束（禁止merge和split事件的发生！）
-if ~isempty(strfind(trackpath,'SIM+'))
-    disp('Attention! merge&split event has been canceled！')
-    for t = s_frame+1:e_frame
-        Fop1 = [ Fop1, sum(fmj{t}(:))<=0 ];
-    end
-    for t = s_frame:e_frame-1
-        Fop1 = [ Fop1, sum(fiv{t}(:))<=0 ];
-    end
-end
+% 针对数据集3（Fluo-N2DH-SIM+）的约束（禁止merge和split事件的发生！椭圆假说中，超像素不禁止）
+% if ~isempty(strfind(trackpath,'SIM+'))
+%     disp('Attention! merge&split event has been canceled！')
+%     for t = s_frame+1:e_frame
+%         Fop1 = [ Fop1, sum(fmj{t}(:))<=0 ];
+%     end
+%     for t = s_frame:e_frame-1
+%         Fop1 = [ Fop1, sum(fiv{t}(:))<=0 ];
+%     end
+% end
 
 if any(use_op_cons==1)
     %################## 可选择的约束一 #################（与真实情况有点矛盾）

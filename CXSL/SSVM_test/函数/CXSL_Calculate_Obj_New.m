@@ -11,7 +11,7 @@ function object_function = CXSL_Calculate_Obj_New( dataset, w_best, s_frame, e_f
 [ ~, trackpath ] = getpath( dataset );
 % 进来的 w_best 为列向量，此处先转换为行向量再进行相乘
 % 载入特征
-if numel(w_best)==40
+if numel(w_best)>=40
     load([ trackpath, '\结构化学习\Feature_Plus_New.mat']);
 else
     load([ trackpath, '\结构化学习\Feature_New.mat']);
@@ -19,12 +19,14 @@ end
 
 if exist('feature_fij_p','var')
     % 如为增广的特征则使用增广的w 
-    wij = w_best( 1:9 )'; 
-    wit = w_best( 10:15 )';
-    wid = w_best( 16:24 )';
-    wiv = w_best( 25:29 )';
-    wmj = w_best( 30:34 )';
-    wsj = w_best( 35:40 )'; 
+    d_f = [ 13, 12, 25, 24, 24, 12 ]; % 各事件特征的维数(要按顺序)
+    tmp = cumsum(d_f);
+    wij = w_best( 1:tmp(1) )'; 
+    wit = w_best( tmp(1)+1:tmp(2) )';
+    wid = w_best( tmp(2)+1:tmp(3) )';
+    wiv = w_best( tmp(3)+1:tmp(4) )';
+    wmj = w_best( tmp(4)+1:tmp(5) )';
+    wsj = w_best( tmp(5)+1:tmp(6) )'; 
 
     feature_fij = feature_fij_p;
     feature_fit = feature_fit_p;

@@ -20,7 +20,7 @@
 %
 % Feb 2013
 
-function maskedim = maskimage(im, mask, col)
+function maskedim = maskimage(im, maskim, col)
     
     [rows,cols, chan] = size(im);
     
@@ -38,7 +38,7 @@ function maskedim = maskimage(im, mask, col)
     maskedim = im;
     for n = 1:chan
         tmp = maskedim(:,:,n);
-        tmp(mask) = col(n);
+        tmp(maskim) = col(n);
         maskedim(:,:,n) = tmp;
     end
     
