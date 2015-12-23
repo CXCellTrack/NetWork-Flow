@@ -8,13 +8,13 @@ set regpath=HKEY_CURRENT_USER\Environment
 
 set evname=trainSegPath
 
-set trainSegPath=E:\datasets\second_edition\training_datasets\PhC-C2DL-PSC\01_seg
+set trainSegPath=E:\datasets\first_edition\training_datasets\N2DL-HeLa\01_2-16_seg
 
 reg add "%regpath%" /v %evname% /d %trainSegPath% /f
 
 set evname=trainTrackPath
 
-set trainTrackPath=E:\datasets\second_edition\training_datasets\PhC-C2DL-PSC\01_track
+set trainTrackPath=E:\datasets\first_edition\training_datasets\N2DL-HeLa\01_2-16_track
 
 reg add "%regpath%" /v %evname% /d %trainTrackPath% /f
 
@@ -22,13 +22,13 @@ reg add "%regpath%" /v %evname% /d %trainTrackPath% /f
 
 set evname=testSegPath
 
-set testSegPath=E:\datasets\second_edition\competition_datasets\PhC-C2DL-PSC\01_seg
+set testSegPath=E:\datasets\first_edition\competition_datasets\N2DL-HeLa\01_2-16_seg
 
 reg add "%regpath%" /v %evname% /d %testSegPath% /f
 
 set evname=testTrackPath
 
-set testTrackPath=E:\datasets\second_edition\competition_datasets\PhC-C2DL-PSC\01_track
+set testTrackPath=E:\datasets\first_edition\competition_datasets\N2DL-HeLa\01_2-16_track
 
 reg add "%regpath%" /v %evname% /d %testTrackPath% /f
 

@@ -22,8 +22,6 @@ end
 segdir = dir([ segpath, '\*.tif']);
 s_frame = 1;
 e_frame = numel(segdir);
-% 指定是否存在GT，如果存在，则计算精度等指标，否则不需要算
-exist_GT = 0;
 disp(['  计算 ',num2str(s_frame), '—',num2str(e_frame), ' 帧的目标函数和约束条件...']);
 
 %% 计算约束条件 注意：不包含损失函数
@@ -35,8 +33,8 @@ disp('分配流程变量...');tic
 [ fij fit fid fiv fmj fsj ] = CXSL_Assign_FlowVar( dataset, s_frame, e_frame );
 toc;disp('计算约束条件...');
 % 此处的true/false决定是否加入可选约束（要与训练时的选择一致)
-use_op_cons_test = [3 5];
-[ Ffull Fbase ] = CXSL_Calculate_Constraint_New_Conflict( dataset, use_op_cons_test, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
+use_op_cons_test = [3 5 4];
+[ Ffull, Fbase ] = CXSL_Calculate_Constraint_New_Conflict( dataset, use_op_cons_test, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
 % 计算目标函数（需要载入之前计算好的特征）
 if 1
     F = Ffull;
@@ -46,13 +44,13 @@ end
 
 %% 组建目标函数
 [ ~, traintrackpath ] = getpath( 'training' );
-if 0
+if 1
     if 0
         disp('  载入之前 SSVM 训练得到的最佳 w...');
         load([ traintrackpath, '\结构化学习\SSVM_Best_W_New.mat']);
     else % 想要复现 excel 中记载的以前的实验结果，只需要手动填写 w_best 即可
         disp('  载入手动填写的w...');
-        thisfile = 'BCFW\loss_5_13_cons35_cost1_initw_line.mat';
+        thisfile = 'BCFWavg_paper\withgap\64_2\loss_64_2_cons35_cost1_initwp_line_b_rng.mat';
         load([ traintrackpath, '\训练结果记录\', thisfile ], 'w_best','use_op_cons','Wavg');
 %         w_best = Wavg{394};
 %         if ~isequal(use_op_cons, use_op_cons_test)
@@ -114,6 +112,8 @@ fprintf('\tcost:\t%.4f\n\n', COST); % save([trackpath, '\结构化学习\Tracking_Dat
 
 %% 调用函数计算精度（假说精度）
 addfd = 0; % 选择是否将虚景计算在总精度中
+% 指定是否存在GT，如果存在，则计算精度等指标，否则不需要算
+exist_GT = 1;
 [ ~, PRF, COUNT ] = CX_Calculate_Loss( dataset, addfd, exist_GT, s_frame, e_frame, Fij, Fit, Fid, Fiv, Fmj, Fsj );
 
 if isa(PRF, 'struct')

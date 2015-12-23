@@ -45,7 +45,7 @@ end
 nsp = 3000; % 200个超像素（PSC为3000个）
 rm_small = 20; % 除去小于80像素的label
 
-for frame=51:100 %length(bw_dir)
+for frame=151:251 %length(bw_dir)
     tic
     % 生成图片地址
     raw_pic = [raw_path, '\', raw_dir(frame).name];

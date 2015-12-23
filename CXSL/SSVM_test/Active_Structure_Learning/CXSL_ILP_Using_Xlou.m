@@ -14,7 +14,8 @@ dataset = 'competition';
 [ ~, traintrackpath ] = getpath( 'training' );
 
 %% 先求出22之间的约束
-load([ trackpath, '\Pair\Pre_data_New.mat'], 'n');
+global Ellipse n conflict_fij conflict_pair_next_xy conflict_pair_last_xy
+load([ trackpath, '\Pair\Pre_data_New.mat']);
 frame = numel(n);
 
 fij = cell(frame-1,1);
@@ -47,8 +48,8 @@ if 0
     load([ traintrackpath, '\结构化学习\SSVM_Best_W_New.mat']);
 else % 想要复现 excel 中记载的以前的实验结果，只需要手动填写 w_best 即可
     disp('  载入手动填写的w...');
-    % 注意！只能用2帧长度样本的训练结果来测试这个！
-    thisfile = 'BCFWavg_paper\withgap\64_2\loss_64_2_cons35_cost1_init0p_line_rng.mat';
+    % 注意！只能用2帧长度样本的训练结果来测试这个！  
+    thisfile = 'BCFWavg_paper\40_2\loss_40_2_cons35_cost1_initwp_line.mat';
     load([ traintrackpath, '\训练结果记录\', thisfile ], 'w_best','Wavg');
 %     w_best = Wavg{1792};
 end

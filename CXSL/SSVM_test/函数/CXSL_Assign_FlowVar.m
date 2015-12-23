@@ -14,8 +14,9 @@ function [ fij fit fid fiv fmj fsj ] = CXSL_Assign_FlowVar( dataset, s_frame, e_
 
 % ======================================================================= %
 % tic;
-[ ~, trackpath ] = getpath( dataset );
-load([ trackpath, '\Pair\Pre_data_New.mat'], 'n');
+global n
+% [ ~, trackpath ] = getpath( dataset );
+% load([ trackpath, '\Pair\Pre_data_New.mat'], 'n');
 
 %% 2.构建变量矩阵
 fij = cell(e_frame-1,1);

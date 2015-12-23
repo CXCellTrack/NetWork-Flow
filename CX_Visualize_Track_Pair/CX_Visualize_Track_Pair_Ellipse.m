@@ -11,7 +11,7 @@
 clear;close all;
 
 % 指定在哪个数据集上进行计算（train or test）
-if 0
+if 1
     dataset = 'competition';
 else
     dataset = 'training';
@@ -24,9 +24,8 @@ global conflict_fij conflict_pair_last_xy conflict_pair_next_xy n;
 
 load([trackpath, '\Pair\Pre_data_New.mat']);
 fig_addr = [trackpath, '\新拟合图\'];
-fig_addr = [trackpath(1:end-11), '\'];
  
-if 1
+if 0
     disp('  载入真实流程变量数据...');
     load([trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
     output_addr = [trackpath, '\GT\GT_after_hand_tune\'];
@@ -34,8 +33,8 @@ if 1
     e_frame = numel(Fmj);
 else
     disp('  载入经过SSVM learing后得到的分配方案');
-    track_data_addr = [trackpath, '\结构化学习\Tracking_Data.mat'];
-    output_addr = [trackpath, '\Pair\可视化跟踪标记\'];
+    track_data_addr = [trackpath, '\结构化学习\asl_track.mat'];
+    output_addr = [trackpath, '\结构化学习\asl_track\'];
     mkdir(output_addr)
     load( track_data_addr );
     % 根据载入的流程变量计算 s_frame 和 e_frame
@@ -50,20 +49,27 @@ rng(1)
 color = color(randperm(nc),:);
 
 %% 读入绘图底板，即新拟合图
-fig_dir = dir([ fig_addr, '*.tif' ]);
+fig_dir = dir([ fig_addr, '*.fig' ]);
 % 设置保存图片的文件夹，先清空其中的fig图片
 delete([output_addr,'*.fig']);
 % 即当新拟合图文件夹内的图片数量比目前的frame小时，需要重绘拟合图片
 if 0
     CX_RePlot_Ellipse( dataset );
 end
+% 椭圆是否需要边框，无边框更漂亮，适合作图！有边框用于查错debug
+need_contour = true;
 
 %% 开始进行循环绘制
 for t = s_frame:e_frame
     fig_name = [ fig_addr, fig_dir(t).name ];
-%     openfig(fig_name, 'new'); %'invisible'
-    im = zeros(size(imread(fig_name)));
-    imshow(im);
+    if need_contour
+        openfig(fig_name, 'new'); %'invisible'
+    else
+        sizeim = [ ]; % 无边框模式下需要填写图片大小
+        im = zeros(sizeim);
+        imshow(im);
+    end
+    
     disp(['  正在处理', fig_name, '...']);
     hold on 
     %##### 第一帧需要分配随机彩色 #####

@@ -24,7 +24,7 @@ disp(['  计算 ',num2str(s_frame), '—',num2str(e_frame), ' 帧的约束条件...']);
 
 [ fij fit fid fiv fmj fsj ] = CXSL_Assign_FlowVar( dataset, s_frame, e_frame );
 % 此处的true/false决定是否加入可选约束（要与训练时的选择一致）
-[ F ] = CXSL_Calculate_Constraint_New_Conflict( dataset, [3 5], s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
+F = ASL_Calculate_Constraint( dataset, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
 % 计算目标函数（需要载入之前计算好的特征）
 % object_function = CXSL_Calculate_Obj_New( dataset, w_best, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj );
 

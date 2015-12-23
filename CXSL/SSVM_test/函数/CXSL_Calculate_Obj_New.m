@@ -20,6 +20,7 @@ end
 if exist('feature_fij_p','var')
     % 如为增广的特征则使用增广的w 
     d_f = [ 13, 12, 25, 24, 24, 12 ]; % 各事件特征的维数(要按顺序)
+    d_f = [ 9, 6, 9, 5, 5, 6 ];
     tmp = cumsum(d_f);
     wij = w_best( 1:tmp(1) )'; 
     wit = w_best( tmp(1)+1:tmp(2) )';
