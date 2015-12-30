@@ -6,7 +6,7 @@
 %
 % ================================================================== %
 
-function [ fij fit fid fiv fmj fsj F ] = ASLearning( s_frame, e_frame )
+function [ fij fit fid fiv fmj fsj F ] = ASLearning( method, s_frame, e_frame )
 
 % 指定测试帧的范围
 % s_frame = 1;
@@ -21,13 +21,16 @@ disp(['  计算 ',num2str(s_frame), '—',num2str(e_frame), ' 帧的约束条件...']);
 % B方法：先计算 prob = <w,feature>（41s）在计算 obj = prob.*z（1s）
 %        如果放在循环中，每次花一秒计算obj略长，但只计算一次的话速度很快
 % 因此此处使用B方法速度较快，经验证 count_F_false 的计算没有问题
-
 [ fij fit fid fiv fmj fsj ] = CXSL_Assign_FlowVar( dataset, s_frame, e_frame );
-% 此处的true/false决定是否加入可选约束（要与训练时的选择一致）
-F = ASL_Calculate_Constraint( dataset, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
-% 计算目标函数（需要载入之前计算好的特征）
-% object_function = CXSL_Calculate_Obj_New( dataset, w_best, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj );
 
+if strcmp(method, 'ASL')
+    % ASL原方法，没有多余假说
+    F = ASL_Calculate_Constraint( dataset, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
+else
+    % OURS-P方法，有多余假说
+    use_op_cons = [3 4 5];
+    [ F ] = CXSL_Calculate_Constraint_New_Conflict( dataset, use_op_cons, s_frame,e_frame,fij,fit,fid,fiv,fmj,fsj );
+end
 % ----------------------------------------------------------------------- %
 
 %% 最终求解

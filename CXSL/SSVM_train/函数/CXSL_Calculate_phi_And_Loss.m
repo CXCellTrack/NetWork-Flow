@@ -12,8 +12,8 @@ function [ fij fit fid fiv fmj fsj fai_x_z cost_for_train cost_for_train_all ] =
 dataset = 'training'; % 这个函数也只在训练中使用
 [ ~, trackpath ] = getpath( dataset );
 
-global n conflict_pair_last_xy conflict_pair_next_xy conflict_fij
-% load([ trackpath, '\Pair\Pre_data_New.mat'], 'n','conflict_pair_last_xy','conflict_pair_next_xy','conflict_fij');
+% global n conflict_pair_last_xy conflict_pair_next_xy conflict_fij
+load([ trackpath, '\Pair\Pre_data_New.mat'], 'n','conflict_pair_last_xy','conflict_pair_next_xy','conflict_fij');
 % 载入特征
 if numel(w)>=40
     load([ trackpath, '\结构化学习\Feature_Plus_New.mat']);

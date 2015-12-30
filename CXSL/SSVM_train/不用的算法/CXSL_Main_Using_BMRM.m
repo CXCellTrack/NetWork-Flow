@@ -32,12 +32,12 @@ else
 end
 
 % 定义样本个数 N 和 单个样本中的帧数 frame
-N = 8;
-frame = 10;
+N = 10;
+frame = 6;
 s_frame = zeros(N,1);
 e_frame = zeros(N,1);
 % 目前有gt的帧数，对随机取样有影响
-gt_frame = 80;
+gt_frame = 60;
 
 % 选择取样方式
 sample_method = 1;
@@ -125,6 +125,10 @@ phi_x_z_star = cell(N,1);
 sum_cost = cell(N,1);
 sum_cost_all = cell(N,1);
 
+global Ellipse n conflict_fij conflict_pair_next_xy conflict_pair_last_xy;
+Pre_data_addr = [ trackpath, '\Pair\Pre_data_New.mat' ];
+load( Pre_data_addr);
+
 tic;
 % 计算 phi(x,z)和△(z*,z)，分配好流程变量
 for ii=1:N
@@ -159,7 +163,6 @@ else
 end
 
 while t < iter % && ls >= gap
-
     t = t + 1;
     % 记录下每次循环所用的时间
     tic;

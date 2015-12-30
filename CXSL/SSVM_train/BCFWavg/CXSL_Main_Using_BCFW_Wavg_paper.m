@@ -32,8 +32,8 @@ if 0
 end
 
 % 定义样本个数 N 和 单个样本中的帧数 frame
-N = 40;
-frame = 2;
+N = 1;
+frame = 80;
 s_frame = zeros(N,1);
 e_frame = zeros(N,1);
 % 目前有gt的帧数，对随机取样有影响
@@ -299,7 +299,7 @@ w_for_excel = w_best';
 plot(aver_loss, '-*');
 % 对得到的收敛曲线进行保存
 if 0
-    name = 'loss_initwp_line';
+    name = 'loss_initwp_line_b';
     lossdir = [ trackpath, '\训练结果记录\BCFWavg_paper\ASL\'];
     mkdir(lossdir);
     save([lossdir, name, '.mat'], 'time','w','linesearch','use_op_cons','sample_loss','lambda','w_best','Wavg');

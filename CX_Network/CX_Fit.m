@@ -8,6 +8,7 @@
 
 function [ e ,lunkuo ]= CX_Fit( frame, pic ,iteration_num, tolerance, remove_small )   %%iteration_num是众数滤波次数
 tic;
+
     %% 1.读入图片
 %     error(nargchk(4, 4, nargin));
     if ischar(pic)
@@ -72,6 +73,7 @@ tic;
         return;
     end
     [edgelist] = CX_edgelink( edgeim );
+    % 其实matlab自带函数 bwtraceboundary 就可以实现这个功能！！2015.12.23
 %     [edgelist, ~] = edgelink( edgeim, 10 );  % edgelist是每个前景的边缘像素集合，labelededgeim是像素点对应的前景编号
     
     %% 8. 去除过小的边际（这段可作为cell删减的模板）（利用双wihle循环删除cell，实现变长度循环）   

@@ -33,7 +33,7 @@ disp('分配流程变量...');tic
 [ fij fit fid fiv fmj fsj ] = CXSL_Assign_FlowVar( dataset, s_frame, e_frame );
 toc;disp('计算约束条件...');
 % 此处的true/false决定是否加入可选约束（要与训练时的选择一致)
-use_op_cons_test = [3 5 4];
+use_op_cons_test = [3 5]; % 可选约束345代表了OURS-P的情况
 [ Ffull, Fbase ] = CXSL_Calculate_Constraint_New_Conflict( dataset, use_op_cons_test, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
 % 计算目标函数（需要载入之前计算好的特征）
 if 1
@@ -50,7 +50,7 @@ if 1
         load([ traintrackpath, '\结构化学习\SSVM_Best_W_New.mat']);
     else % 想要复现 excel 中记载的以前的实验结果，只需要手动填写 w_best 即可
         disp('  载入手动填写的w...');
-        thisfile = 'BCFWavg_paper\withgap\64_2\loss_64_2_cons35_cost1_initwp_line_b_rng.mat';
+        thisfile = 'BCFW\loss_5_13_initw_line_rng.mat';
         load([ traintrackpath, '\训练结果记录\', thisfile ], 'w_best','use_op_cons','Wavg');
 %         w_best = Wavg{394};
 %         if ~isequal(use_op_cons, use_op_cons_test)

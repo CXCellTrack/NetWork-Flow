@@ -266,7 +266,7 @@ end
 
 %% µ±µ±Ç°Ñ­»·´ÎÊıtĞ¡ÓÚÉÏÏŞ£¬ÇÒgap²»·ûºÏÒªÇóÊ±£¬½øĞĞÑ­»·¼ÆËã£¬ÈôÏëÔö´ó¾«¶È»òÂÖÊı£¬ĞŞ¸ÄgapºÍiterÔÙÔËĞĞ´Ëcell¼´¿É
 usecostall = 0;
-linesearch = 0;
+linesearch = 1;
 if usecostall
     disp('µ±Ç°Ñ¡ÔñµÄËğÊ§ÖĞ°üº¬ÁËĞé¾°£¡');
     sample_cost = sum_cost_all;
@@ -380,7 +380,6 @@ while t < iter %%&& ls*N >= gap) || t <= N % µü´ú´ÎÊı±ØĞë´óÓÚÑù±¾Êı£¨¼´Ã¿¸öÑù±¾¶
         Wi{t+1,jj} = Wi{t,jj};
         Li(t+1,jj) = Li(t,jj);
     end
-    W(t+1,:) = W(t,:);
     
     % ÕâĞ©¶«Î÷Ó¦¸ÃÊÇÓëÊÂ¼şÎŞ¹ØµÄ£¬ĞèÒª·Åµ½ÍâÃæ¸üĞÂ
     PSI_zstar_zhat = [];
@@ -406,7 +405,7 @@ while t < iter %%&& ls*N >= gap) || t <= N % µü´ú´ÎÊı±ØĞë´óÓÚÑù±¾Êı£¨¼´Ã¿¸öÑù±¾¶
     
     for ev=1:6 % Ã¿¸öÊÂ¼ş·Ö±ğ¸üĞÂ
         %% --------------- ÏßĞÔºË¸üĞÂ·½·¨ ---------------- %
-        if islinear(ev)
+            if islinear(ev)
             PSI_zstar_zhat = phi_x_z_star{ind}{ev} - phi_x_z_hat{ev};
             Ws = PSI_zstar_zhat/(lambda(ev)*N);
             ls = delta_zstar_zhat/N;  
@@ -417,7 +416,7 @@ while t < iter %%&& ls*N >= gap) || t <= N % µü´ú´ÎÊı±ØĞë´óÓÚÑù±¾Êı£¨¼´Ã¿¸öÑù±¾¶
             % ¸üĞÂ wºÍL£¬½«¸üĞÂºóµÄw±£´æÔÚ W{t+1,N+1}ÖĞ
             W{t+1,ev} = W{t,ev} + Wi{t+1,ind}{ev} - Wi{t,ind}{ev};
             % Ã¿¸öÊÂ¼şw¶¼¸üĞÂ£¬Ö»ÊÇÇó½âoracleµÄÊ±ºò²»ÓÃ·ÇÏßĞÔµÄw
-        end
+            
         
         %% --------------- ·ÇÏßĞÔºË¸üĞÂ·½·¨ ---------------- %
         if ~islinear(ev)

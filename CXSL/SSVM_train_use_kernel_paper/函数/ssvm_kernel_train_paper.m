@@ -4,6 +4,8 @@ function [ Y_start_K_Y Y_hat_K_Y ] = ssvm_kernel_train_paper(y_ev, alpha_ev, Ker
     
 [ ~, trackpath ] = getpath( 'training' );
 load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']); % 载入标准答案
+% global 
+
 y_star = cell(N,1); % y*
 switch ev % 根据事件选择feature和流程变量
     case 1

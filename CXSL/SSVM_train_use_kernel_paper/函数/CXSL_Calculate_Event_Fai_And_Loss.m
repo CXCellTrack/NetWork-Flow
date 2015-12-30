@@ -131,6 +131,10 @@ for t = s_frame+1:e_frame
 end
 
 % ============= 注意：论文中的方法是吧所有的count加起来在计算 ============== %
+
+% TP.fid  = TP.fid*10; % 事实证明无效，放大后误差整体增大，且无法通过学习下降
+% Tcount(3) = Tcount(3)*10; % 将fid放大一定倍数，以加强学习
+
 event_TP = TP.fij + TP.fit + TP.fid + TP.fiv + TP.fmj + TP.fsj;
  
 %% 计算（GT中不采用的假说 测试却被采用）造成的误差

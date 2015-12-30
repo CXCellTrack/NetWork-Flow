@@ -8,7 +8,7 @@
 %######################################
 
 clear;close all;
-[ ~, trackpath ] = getpath( 'training' );
+[ ~, trackpath ] = getpath( 'training' );trackpath='E:\datasets\first_edition\training_datasets\N2DL-HeLa\01_2-16_track';
 
 last = max(strfind(trackpath, '\'));
 gtpath = [trackpath(1:last+2), '_GT\TRA\'];
@@ -129,7 +129,7 @@ for t=1:frame % 对frame中有，但目前标记中没有的进行标记
     label2e{t}(tmp_label2e(:,1),1) = tmp_label2e(:,2);
     clear global;
     
-    if 1
+    if 0
         disp('保存结果到 label2e.mat 中');
         save([ trackpath, '\GT\Label_to_Ellipse.mat'], 'label2e');
     end

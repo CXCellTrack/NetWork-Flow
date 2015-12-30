@@ -43,7 +43,7 @@ use_op_cons = [3 5];
 [ ~, traintrackpath ] = getpath( 'training' );
 
 disp('  载入之前 SSVM 训练保存数据...'); 
-thisfile = '核记录\BCFW\sigmoid\loss_5_13_init0p_noline-s-0.5-rng.mat';
+thisfile = '核记录\BCFW\loss_5_13_initwp_line-linear-rng.mat';
 load([ traintrackpath, '\训练结果记录\', thisfile]);
 
 disp('组建目标函数...');tic
@@ -114,6 +114,7 @@ if 1
     save(matpath, 'PRF','COUNT','Fij','Fit','Fid','Fiv','Fmj','Fsj'); % 注意修改mat名称
     file = fopen(strrep(matpath,'mat','txt'), 'w'); fclose(file);
 end
+
 
 
 
