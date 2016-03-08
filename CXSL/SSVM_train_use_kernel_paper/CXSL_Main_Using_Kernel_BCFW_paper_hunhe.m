@@ -115,8 +115,8 @@ ls = 1; % Ñù±¾Æ½¾ùËğÊ§º¯Êı
 %% ------------------ ºËº¯ÊıËùÓÃµ½µÄ±äÁ¿ ----------------- % 
 % ÉèÖÃ6¸öÊÂ¼şµÄºËº¯ÊıÖÖÀàÒÔ¼°²ÎÊı£¨¿ÉÑ¡ºËº¯ÊıÎªlinear¡¢poly¡¢rbf¡¢sigmoid£©
 % 6¸öÊÂ¼şÒÀ´ÎÎªfij¡¢fit¡¢fid¡¢fiv¡¢fmj¡¢fsj
-kernel_type = {'linear','linear','rbf','linear','linear','linear'};
-cmd = {'','','-g 1','','',''};
+kernel_type = {'linear','linear','sigmoid','linear','linear','linear'};
+cmd = {'','','-s 0.1','','',''};
 % ¶¨Òå³Í·£Ïî lambda ¦Ë£¨ÓÃÓÚ¿ØÖÆwµÄÊıÁ¿¼¶£©
 lambda = 1e-2*ones(1,6);
 islinear = strncmp(kernel_type, 'linear', 6); % Âß¼­¾ØÕó£¬ÓÃÓÚÖ¸Ê¾ÄÄĞ©ÊÂ¼şÊÇÏßĞÔ
@@ -224,7 +224,7 @@ toc;
 
 %% ×îºÄÊ±µÄ²½ÖèÔÚÕâÀï£¡£¡£¡¼ÆËãËùÓĞÌØÕ÷¼äµÄºË
 clear Kernel_ev kernel_ff_all % ·ÀÖ¹ÄÚ´æ²»¹»
-kernel_path = [trackpath, '\ºËÑµÁ·\kernel_ff_all-g-1.mat'];
+kernel_path = [trackpath, '\ºËÑµÁ·\kernel_ff_all-s-0.1.mat'];
 if ~exist(kernel_path, 'file')   
     kernel_ff_all = cell(1,6);
     for ev=1:6
@@ -266,7 +266,7 @@ end
 
 %% µ±µ±Ç°Ñ­»·´ÎÊıtĞ¡ÓÚÉÏÏŞ£¬ÇÒgap²»·ûºÏÒªÇóÊ±£¬½øĞĞÑ­»·¼ÆËã£¬ÈôÏëÔö´ó¾«¶È»òÂÖÊı£¬ĞŞ¸ÄgapºÍiterÔÙÔËĞĞ´Ëcell¼´¿É
 usecostall = 0;
-linesearch = 0;
+linesearch = 1;
 if usecostall
     disp('µ±Ç°Ñ¡ÔñµÄËğÊ§ÖĞ°üº¬ÁËĞé¾°£¡');
     sample_cost = sum_cost_all;
@@ -450,9 +450,7 @@ while t < iter %%&& ls*N >= gap) || t <= N % µü´ú´ÎÊı±ØĞë´óÓÚÑù±¾Êı£¨¼´Ã¿¸öÑù±¾¶
             s_vector(s) = 1; 
             % ¸üĞÂalpha_i
             if linesearch
-%                 ws = phi_y_i{ind,ev}(:,s); % ws=A*¦Ás
-%                 wik = 
-                gamma_aplha = 2*N/(2*N + t-1);
+                gamma_aplha = gamma(t);
             else
                 gamma_aplha = 2*N/(2*N + t-1);
             end
@@ -556,10 +554,10 @@ fprintf('\ttime consumption:\t%0.2f min\n', sum(time)/60);
 plot(aver_loss, '-*');
 % ¶ÔµÃµ½µÄÊÕÁ²ÇúÏß½øĞĞ±£´æ
 if 0
-    name = 'loss_5_13_initwp_line-linear-rng';
-    lossdir = [ trackpath, '\ÑµÁ·½á¹û¼ÇÂ¼\ºË¼ÇÂ¼\BCFW\'];
+    name = 'loss_5_13_initwp_line-s-0.1-rng';
+    lossdir = [ trackpath, '\ÑµÁ·½á¹û¼ÇÂ¼\ºË¼ÇÂ¼\BCFW\sigmoid\initwp_line\'];
     mkdir(lossdir);
-    save([lossdir, name, '.mat'], 'time','sample_loss','w_best','linesearch','w',...
+    save([lossdir, name, '.mat'], 'time','sample_loss','w_best','linesearch','w','W',...
         'delta_y_best','feature_best','alpha_best','kernel_type','cmd','lambda','islinear');
     saveas(1, [lossdir, name, '.fig']);
 end

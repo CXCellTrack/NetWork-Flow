@@ -52,7 +52,7 @@ function Y_star_K_Y = cal_Ystar_K_Y(y_star, y_train, Kernel_ev, ev, N, ind_train
 % global Kernel_ev;
 
 Y_star_K_Y = 0;
-for ind=1:N
+for ind=1:N % 对于一个特定的aplha_i
 %     disp(['  计算样本',num2str(ind), '...'])
     y1 = y_star{ind};
     y2 = y_train;
@@ -73,17 +73,24 @@ for ind=1:N
     end
     % ---------------------------------- %
     
+    % 计算ΣΣystar_i*y*<fi,f>，之后还要乘以对应的αi
+    % 原始方法：使用矩阵乘法求和
     yKy = binvar(numel(y1), size(thisK,2), 'full');
+    sumyKy = 0;
     for ii=1:numel(y1)
-        for jj=1:size(thisK,2)
+        for jj=1:size(thisK,2) % siz(thisK,2)=numel(y2)
             tmpy1 = reshape(y1{ii},[],1)'; % 必须都是按列拉直
             tmpy2 = reshape(y2{jj},[],1);
             tmpK = thisK{ii,jj};
-            yKy(ii,jj) = tmpy1*tmpK*tmpy2;
+            % yKy(ii,jj) = tmpy1*tmpK*tmpy2; % 这个太慢
+            % 2015.12.31 新方法：无意间发现符号运算时，采用累加比sum(快很多)
+            % 猜测可能是因为符号运算的sum很慢的原因
+            sumyKy = sumyKy + tmpy1*tmpK*tmpy2;
         end
     end
     % 这个和还要*该样本中支持向量的个数(y* 由于alpha和为1，就不用乘了)
-    Y_star_K_Y = Y_star_K_Y + sum(yKy(:));
+    Y_star_K_Y = Y_star_K_Y + sumyKy; %sum(yKy(:));
+    
 end
 % 求<f*, f>无需*alpha，因为alpha和一定为1
 
@@ -119,17 +126,23 @@ for ind=1:N
         y1 = y_sample1{i_in_one}; % 该样本中某一个特定的支持向量
         alpha1 = alpha_sample1(i_in_one); % 该样本中某一个特定的支持向量对应的alpha
 
-        yKy = binvar(numel(y1), size(thisK,2), 'full');
+%         yKy = binvar(numel(y1), size(thisK,2), 'full');
+        sumyKy = 0;
         for ii=1:numel(y1)
             for jj=1:size(thisK,2)
+                % 采用向量化方法（慢！）
                 tmpy1 = reshape(y1{ii},[],1)'; % 必须都是按列拉直
                 tmpy2 = reshape(y2{jj},[],1);
                 tmpK = thisK{ii,jj};
-                yKy(ii,jj) = tmpy1*tmpK*tmpy2;
+                % 计算这个最后还需要计算sum(yKy(:))，比for循环慢太多
+%                 yKy(ii,jj) = tmpy1*tmpK*tmpy2;
+                % 使用累加速度快了20多倍 2015.12.31
+                sumyKy = sumyKy + tmpy1*tmpK*tmpy2;
             end
         end
         % 这个和还要*该样本中支持向量的对应的aplha
-        svK = svK + alpha1*sum(yKy(:));
+%         svK = svK + alpha1*sum(yKy(:));
+        svK = svK + alpha1*sumyKy;
     end
     
     Y_i_K_Y = Y_i_K_Y + svK;

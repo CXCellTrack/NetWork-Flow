@@ -79,6 +79,7 @@ for ev=1:6
     if islinear(ev)
         continue;
     end
+    
     %% ¿¼²ì·ÖÁÑÊÂ¼ş
 %     tic
     if ev==3 

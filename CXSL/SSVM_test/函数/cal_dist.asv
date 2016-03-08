@@ -1,0 +1,4 @@
+function d = cal_dist(s1,s2,e1,e2)
+
+d = [0,0;0,0]
+d(1,1) = sqrt((e1.x0-e2.x0)^2 + (e1.y0-e2.y0)^2);

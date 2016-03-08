@@ -62,6 +62,7 @@ tic;
     edgeim = Remove_Spurs( edgeim );
     % 保存edgeim图片
     lunkuo = edgeim; % 将其输出到外部空间中保存
+    im
     
     %% 7. 将轮廓按逆时针方向连接起来（实际上，由于一些奇怪的形状，连接方式有可能出现错乱，出现顺时针或8字型连接）
     % 由于这个edgelink函数的复杂性，难以修复这个bug，因此选择在后面的操作中间接弥补
