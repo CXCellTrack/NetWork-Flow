@@ -68,7 +68,7 @@ for i_m=1:size(current_tracks,1)
         elseif e_last==0 && e_next~=0
             % 前者为0，则后者出现
             Fsj{m_t+1}(e_next) = 1;
-        elseif e_next==0 && e_last~=0
+        elseif e_last~=0 && e_next==0  
             % 后者为0，则前者消失
             Fit{m_t}(e_last) = 1;
         elseif e_next~=0 && e_last~=0
@@ -91,11 +91,43 @@ for i_m=1:size(current_tracks,1)
         end % 2者均为0，则什么都不发生
         % -------------------------------------------------------- %
     end
+    % ================================================= %
+    % 对于单个传递的问题（不是分裂，但出现在后面的最后一列）
+    i_m_next = find(move_tracks(:,4)==tmp_row(1));
+    if length(i_m_next)==1 % 只出现1次，说明是单次传递
+        newrow = current_tracks(i_m_next,:);
+        if newrow(2)~=tmp_row(3)+1
+            error('出现了跨时间传递！');
+        end
+        e_last = label2e{tmp_row(3)}(tmp_row(1));
+        e_next = label2e{newrow(2)}(newrow(1));
+        % 重复上面的步骤
+        if e_last==0 && e_next==0
+            % 2者均为0，说明连续2帧都没有对应的圆，不加以标记
+        elseif e_last==0 && e_next~=0
+            % 前者为0，则后者出现
+            Fsj{newrow(2)}(e_next) = 1;
+        elseif e_last~=0 && e_next==0  
+            % 后者为0，则前者消失
+            Fit{tmp_row(3)}(e_last) = 1;
+        elseif e_next~=0 && e_last~=0
+            e_next_ind = find( candidate_fij{tmp_row(3)}(e_last,:)==e_next );
+            if isempty(e_next_ind)
+                disp(['第',num2str(tmp_row(3)),'帧的',num2str(e_last),'迁移的目标椭圆',num2str(e_next),'不在4个候选椭圆内']);
+                candidate_fij{tmp_row(3)}(e_last,1) = e_next;
+            else
+                Fij{tmp_row(3)}(e_last, e_next_ind) = 1;
+            end
+        end
+    end
+    
 end
 
 %% 寻找appear信息
+% st = tabulate(current_tracks(:,4));
 app_tracks = current_tracks(current_tracks(:,4)==0, :);
 app_tracks = app_tracks(app_tracks(:,2)~=1, :);
+
 for a_t=1:size(app_tracks,1)
     tmp_row = app_tracks(a_t,:);
     % 找到新出现的椭圆e_app, 设置其出现为1
@@ -109,7 +141,7 @@ end
 %% 寻找die信息
 die_tracks = current_tracks(current_tracks(:,3)<frame,:);
 tongji = tabulate(current_tracks(:,4));
-fathers = tongji(tongji(:,2)==2); % 母细胞列表
+fathers = tongji(tongji(:,2)~=0); % 母细胞列表（也包括单传递的father）
 
 for h=1:size(die_tracks,1)
     tmp_row = die_tracks(h,:);
@@ -153,6 +185,9 @@ for d_t=1:divide_num
     e_son2 = label2e{t}(label_son2,1);
     % ----------------------------------------- %
     % 检查是否有与之对应的椭圆
+    if isnan(e_father)||isnan(e_son1)||isnan(e_son2)
+        continue; % 出现nan是非常异常的情况
+    end
     switch num2str(logical([e_father e_son1 e_son2]))
         case '0  1  0' % 无父有子，则子为出现
             Fsj{t}(e_son1) = 1;
@@ -315,7 +350,7 @@ for t=1:frame-1
 end
 
 %% 保存GT流程变量 
-if 0
+if 1
     disp('  保存训练集合的GT流程变量...');
     save([ trackpath, '\GT\GT_Flow_Variables_New.mat'], 'Fij','Fid','Fiv','Fit','Fsj','Fmj');
 end

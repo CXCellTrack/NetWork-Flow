@@ -11,7 +11,7 @@
 clear;close all;
 
 %% 载入测试集合上的跟踪结果
-if 1
+if 0
     dataset = 'competition';
 else
     dataset = 'training';

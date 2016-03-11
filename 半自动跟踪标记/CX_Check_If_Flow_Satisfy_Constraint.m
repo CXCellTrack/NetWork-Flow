@@ -10,7 +10,7 @@
 
 clear;close all;
 % 载入GT流程变量（主要检查这个）  载入pre_data
-if 1
+if 0
     dataset = 'competition';
 else
     dataset = 'training';
@@ -21,15 +21,15 @@ end
 global Fij Fit Fid Fiv Fmj Fsj;
 global conflict_fij conflict_pair_last_xy conflict_pair_next_xy n;
 
-load([ trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
-load([ trackpath, '\结构化学习\asl_track.mat' ]);
+load([ trackpath, '\GT\GT_Flow_Variables_New.mat']);
+% load([ trackpath, '\结构化学习\asl_track.mat' ]);
 load([ trackpath, '\Pair\Pre_data_New.mat'], 'conflict_fij','conflict_pair_last_xy','conflict_pair_next_xy','n','Ellipse','SuperPixel');
 frame = numel(Fsj);
 % frame = 65;
 
 %% 开始检查：主要是入口出口守恒
 
-for t=2:frame-1
+for t=23:frame-1
     disp(['  检查第',num2str(t),'帧...']);
     for j=1:n(t)
         % 调用函数检查j的入口与出口

@@ -21,7 +21,7 @@ F1 = [];
 F2 = [];
 F3 = [];
 F4 = [];
-Fop = cell(1,6);
+Fop = cell(1,99);
 
 %######################################## 建立约束条件 #############################################
 disp('   构建约束1：进出守恒……');
@@ -97,16 +97,16 @@ disp('   构建约束2：可选约束……');
 disp(use_op_cons);
 tic
 
-%% 可选约束1
+%% 可选约束1、99
 %################################################################
 % 针对数据集3（Fluo-N2DH-SIM+）的约束（禁止merge和split事件的发生！椭圆假说中，超像素不禁止）
-if ~isempty(strfind(trackpath,'SIM+'))
+if any(use_op_cons==99) % 可选约束99，禁止merge和split事件的发生
     disp('Attention! merge&split event has been canceled！')
     for t = s_frame+1:e_frame
-        F2 = [ F2, sum(fmj{t}(:))<=0 ];
+        Fop{99} = [ Fop{99}, sum(fmj{t}(:))<=0 ];
     end
     for t = s_frame:e_frame-1
-        F2 = [ F2, sum(fiv{t}(:))<=0 ];
+        Fop{99} = [ Fop{99}, sum(fiv{t}(:))<=0 ];
     end
 end
 
@@ -214,7 +214,7 @@ if any(use_op_cons==4)
     
 end
 
-%% 可选择约束5 
+%% 可选约束5 
 if any(use_op_cons==5)
     %##################  #################
     % 要求分离split出去的2个子细胞必须在同一前景内

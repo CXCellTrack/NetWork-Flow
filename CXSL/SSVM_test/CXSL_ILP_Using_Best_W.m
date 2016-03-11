@@ -19,9 +19,9 @@ end
 [ segpath, trackpath ] = getpath( dataset );
 
 % 指定测试帧的范围
-segdir = dir([ segpath, '\*.tif']);
+testdir = dir([ trackpath(1:end-11), '\*.tif']);
 s_frame = 1;
-e_frame = numel(segdir);
+e_frame = numel(testdir);
 disp(['  计算 ',num2str(s_frame), '—',num2str(e_frame), ' 帧的目标函数和约束条件...']);
 
 %% 计算约束条件 注意：不包含损失函数
@@ -33,7 +33,7 @@ disp('分配流程变量...');tic
 [ fij fit fid fiv fmj fsj ] = CXSL_Assign_FlowVar( dataset, s_frame, e_frame );
 toc;disp('计算约束条件...');
 % 此处的true/false决定是否加入可选约束（要与训练时的选择一致)
-use_op_cons_test = [3 5]; % 可选约束345代表了OURS-P的情况
+use_op_cons_test = [99]; % 可选约束345代表了OURS-P的情况 % 可选约束99，禁止merge和split事件的发生 2016.3.9
 [ Ffull, Fbase ] = CXSL_Calculate_Constraint_New_Conflict( dataset, use_op_cons_test, s_frame, e_frame, fij, fit, fid, fiv, fmj, fsj);
 % 计算目标函数（需要载入之前计算好的特征）
 if 1
@@ -49,9 +49,9 @@ if 1
         disp('  载入之前 SSVM 训练得到的最佳 w...');
         load([ traintrackpath, '\结构化学习\SSVM_Best_W_New.mat']);
     else % 想要复现 excel 中记载的以前的实验结果，只需要手动填写 w_best 即可
-        disp('  载入手动填写的w...');
-        thisfile = 'BCFW\loss_5_13_initw_line_rng.mat';
-        load([ traintrackpath, '\训练结果记录\', thisfile ], 'w_best','use_op_cons','Wavg');
+        disp('  载入之间保存的w...');
+        thisfile = 'initw_line_13_7_rng';
+        load([ traintrackpath, '\训练结果记录\BCFWavg_paper\', thisfile,'.mat' ], 'w_best','use_op_cons','Wavg');
 %         w_best = Wavg{394};
 %         if ~isequal(use_op_cons, use_op_cons_test)
 %             error('测试所用的可选约束和训练不一致！');
@@ -60,8 +60,8 @@ if 1
 else  
     disp('  载入local SVM 训练出来的各事件w...');
     % 也可以使用单独svm训练出来的各事件w，在进行组合
+    thisfile = 'local';
     load([ traintrackpath, '\结构化学习\initial_w_New.mat']);
-    % 加偏置
     w_best = [ wij,bij, wit,bit, wid,bid, wiv,biv, wmj,bmj, wsj,bsj ]';
     % 第一个数据集
 %     w_best = [-24.05027785	0.965959752	-0.209700235	0.023655542	-0.901444678	0.915527485	-0.723055368	0.78127324	-22.34659216	-3.45491283	-1.682414322	-5.355960441	-2.391659001	2.862181421	-7.382944338	8.382838223	1.94377663	-0.451290137	-1.07738777	-4.844423375	-1.122913059	-0.801496889	3.907101647	-11.61160994	3.710115534	0.998335816	4.252699702	0.790594494	1.207125853	3.799458373	1.390618031	5.18991389	1.129864864	0.673380786	-2.076937813	-1.97433464	-1.980221778	-0.051210814	0.597328997	-3.897482158]';
@@ -111,23 +111,22 @@ COST = value(object_function);
 fprintf('\tcost:\t%.4f\n\n', COST); % save([trackpath, '\结构化学习\Tracking_Data.mat'], 'Fij','Fid','Fiv','Fit','Fmj','Fsj');
 
 %% 调用函数计算精度（假说精度）
-addfd = 0; % 选择是否将虚景计算在总精度中
-% 指定是否存在GT，如果存在，则计算精度等指标，否则不需要算
-exist_GT = 1;
-[ ~, PRF, COUNT ] = CX_Calculate_Loss( dataset, addfd, exist_GT, s_frame, e_frame, Fij, Fit, Fid, Fiv, Fmj, Fsj );
-
-if isa(PRF, 'struct')
-    
-    disp(PRF.FM) % 只显示F-measure就行了   
-    % 打印各事件精度
-    Preci = struct2array(PRF.Preci)*100;
-    Recall = struct2array(PRF.Recall)*100;
-    FMeasure = struct2array(PRF.FM)*100;
-    
-    PRM_for_excel = [ Preci;Recall;FMeasure ];
-    COUNT_for_excel = [ COUNT.Tcount', COUNT.fd_Tcount; COUNT.Pcount', COUNT.fd_Pcount ];
-    disp(COUNT_for_excel)
-end
+% addfd = 0; % 选择是否将虚景计算在总精度中
+% % 指定是否存在GT，如果存在，则计算精度等指标，否则不需要算
+% exist_GT = 1;
+% [ ~, PRF, COUNT ] = CX_Calculate_Loss( dataset, addfd, exist_GT, s_frame, e_frame, Fij, Fit, Fid, Fiv, Fmj, Fsj );
+% 
+% if isa(PRF, 'struct')
+%     disp(PRF.FM) % 只显示F-measure就行了   
+%     % 打印各事件精度
+%     Preci = struct2array(PRF.Preci)*100;
+%     Recall = struct2array(PRF.Recall)*100;
+%     FMeasure = struct2array(PRF.FM)*100;
+%     
+%     PRM_for_excel = [ Preci;Recall;FMeasure ];
+%     COUNT_for_excel = [ COUNT.Tcount', COUNT.fd_Tcount; COUNT.Pcount', COUNT.fd_Pcount ];
+%     disp(COUNT_for_excel)
+% end
 % ------------------------------------------------------ %
 
 %% 保存得到的流量变量结果到 track_data 中，供后续画图用（通常不要保存！）
@@ -137,10 +136,33 @@ if 0
     else
         matpath = [trackpath, '\测试结果记录\local_b.mat'];
     end
-    save(matpath, 'PRF','COUNT','Fij','Fit','Fid','Fiv','Fmj','Fsj'); % 注意修改mat名称
+%     save(matpath, 'PRF','COUNT','Fij','Fit','Fid','Fiv','Fmj','Fsj'); % 注意修改mat名称   
     file = fopen(strrep(matpath,'mat','txt'), 'w'); fclose(file);
 end
 
+%% 使用新的 TRAMeasure 进行评估
+name = thisfile;
+logpath = ['C:\Users\Administrator\Desktop\RESULT\gowt1-1\',name,'.txt']; % 每一条轨迹的跟踪路线
+if exist(logpath,'file')
+    warning('目标log已存在，确认覆盖吗？');
+    pause;
+end
+flowvars_path = [trackpath, '\新测试结果记录\',name,'.mat'];
+save(flowvars_path, 'Fij','Fit','Fid','Fiv','Fmj','Fsj');
+% 调用这个函数进行评估
+diary on
+diary(logpath);
+fprintf('trackpath:\n\t%s\n',trackpath);
+fprintf('flowvars_path:\n\t%s\n', flowvars_path);
+fprintf('w:\n\t%s\n\n', num2str(w_best'));
+TRAmea(flowvars_path, dataset);
+
+fprintf('\n计算分裂事件的preci、recall和F-M...\n\n');
+man_track_txt = [trackpath(1:end-10), 'GT\TRA\man_track.txt'];
+res_track_txt = [trackpath(1:end-10), 'RES\res_track.txt'];
+% KTH_track_txt = [trackpath(1:end-13), 'KTH\01_RES\res_track.txt'];
+[PRE, REC, FM] = cal_divide_prec_rec_Fm(man_track_txt, res_track_txt);
+diary off
 
 
 

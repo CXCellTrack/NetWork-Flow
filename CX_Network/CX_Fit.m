@@ -7,6 +7,7 @@
 %######################################
 
 function [ e ,lunkuo ]= CX_Fit( frame, pic ,iteration_num, tolerance, remove_small )   %%iteration_num是众数滤波次数
+    
 tic;
 
     %% 1.读入图片
@@ -27,7 +28,7 @@ tic;
 %   ? E = 25 for the datasets Fluo-C3DL-MDA231, Fluo-N2DL-HeLa, and PhC-C2DL-PSC,
 %   ? E = 0 for the simulated datasets (i.e., Fluo-N2DH-SIM, Fluo-N2DH-SIM+, Fluo-N3DH-SIM, and
 %   Fluo-N3DH-SIM+) and for the dataset Fluo-N3DL-DRO.
-    foi = 0;
+    foi = 50;
     % 调用内部函数
     bw = Remove_Cells_Out_Of_FOI( bw, foi );
 
@@ -60,32 +61,44 @@ tic;
     % 加入padarray后已修复 2015.4.28
     % 调用内部函数
     edgeim = Remove_Spurs( edgeim );
+    % 除去较小的轮廓
+    [LL, nn] = bwlabel(edgeim,8);
+    for ii=1:nn
+        if sum(sum(LL==ii))<=remove_small
+            edgeim(LL==ii) = 0;
+        end
+    end
     % 保存edgeim图片
     lunkuo = edgeim; % 将其输出到外部空间中保存
-    im
     
     %% 7. 将轮廓按逆时针方向连接起来（实际上，由于一些奇怪的形状，连接方式有可能出现错乱，出现顺时针或8字型连接）
     % 由于这个edgelink函数的复杂性，难以修复这个bug，因此选择在后面的操作中间接弥补
     % 这个地方的10像素目前还没被用到，因为有些bug，所以需要自己去除过短的边际
-    [rj, ~, ~, ~] = findendsjunctions(edgeim);
+    [rj, cj, ~, ~] = findendsjunctions(edgeim);
     if ~isempty(rj)
-        lunkuo = 'error';
-        e = [];
-        return;
+        if iteration_num==5
+            for kk=1:numel(rj)
+                edgeim(rj(kk),cj(kk)) = 0;
+            end
+        else
+            lunkuo = 'error';
+            e = [];
+            return;
+        end
     end
     [edgelist] = CX_edgelink( edgeim );
     % 其实matlab自带函数 bwtraceboundary 就可以实现这个功能！！2015.12.23
 %     [edgelist, ~] = edgelink( edgeim, 10 );  % edgelist是每个前景的边缘像素集合，labelededgeim是像素点对应的前景编号
     
     %% 8. 去除过小的边际（这段可作为cell删减的模板）（利用双wihle循环删除cell，实现变长度循环）   
-    % 调用内部函数
-    edgelist = Remove_Small_Edgelist( edgelist, remove_small); % 去除边际小于 remove_small 的前景
+    % 调用内部函数 2016.3.9将这段删去，放到6.进行删除操作
+%     edgelist = Remove_Small_Edgelist( edgelist, remove_small); % 去除边际小于 remove_small 的前景
 
     %% 9.对每个前景轮廓进行分段线性拟合
     seglist = lineseg( edgelist, tolerance );    %%使用线性分段    
     figure;
-%     imshow(edgeim); % 后续的绘图都是在edgeim前景轮廓上进行操作
-    imshow(zeros(size(edgeim)));
+    imshow(edgeim); % 后续的绘图都是在edgeim前景轮廓上进行操作
+%     imshow(zeros(size(edgeim)));
     hold on;
     
     %% 第一部分内容总结

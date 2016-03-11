@@ -1,4 +1,4 @@
-%% 函数2：去除毛刺
+% 函数2：去除毛刺
 function edgeim = Remove_Spurs( edgeim )
 
 flag=1;

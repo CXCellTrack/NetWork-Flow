@@ -11,7 +11,7 @@
 clear;close all;
 
 % 指定在哪个数据集上进行计算（train or test）
-if 1
+if 0
     dataset = 'competition';
 else
     dataset = 'training';
@@ -25,10 +25,10 @@ global conflict_fij conflict_pair_last_xy conflict_pair_next_xy n;
 load([trackpath, '\Pair\Pre_data_New.mat']);
 fig_addr = [trackpath, '\新拟合图\'];
  
-if 0
+if 1
     disp('  载入真实流程变量数据...');
-    load([trackpath, '\GT\GT_after_hand_tune\GT_Flow_Variables_New.mat']);
-    output_addr = [trackpath, '\GT\GT_after_hand_tune\'];
+    load([trackpath, '\GT\GT_Flow_Variables_New.mat']);
+    output_addr = [trackpath, '\GT\'];
     s_frame = 1;
     e_frame = numel(Fmj);
 else

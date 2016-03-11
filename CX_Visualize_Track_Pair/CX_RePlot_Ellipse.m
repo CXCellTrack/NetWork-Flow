@@ -6,12 +6,18 @@ function  CX_RePlot_Ellipse( dataset )
 % 绘制可视化跟踪的图像就是在新椭圆图的基础上
 % ----------------------------------------------------------------------- %
 
-% if 1
-%     dataset = 'competition'; % 选择训练还是测试
-% else
-%     dataset = 'training';
-% end
+if 0
+    dataset = 'competition'; % 选择训练还是测试
+else
+    dataset = 'training';
+end
 [ segpath trackpath ] = getpath( dataset );
+
+% -------- %
+% iiii = 5;
+% segpath = ['E:\datasets\first_edition\training_datasets\N2DH-SIM\0',num2str(iiii),'_0-00_seg'];
+% trackpath = ['E:\datasets\first_edition\training_datasets\N2DH-SIM\0',num2str(iiii),'_0-00_track'];
+% -------- %
 % 载入椭圆数据
 
 load([trackpath, '\Pair\Pre_data_new.mat'], 'Ellipse');

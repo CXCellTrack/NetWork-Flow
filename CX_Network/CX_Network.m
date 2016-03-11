@@ -9,14 +9,17 @@
 %######################################
 clear;close all;
 
-if 0
+if 1
     dataset = 'competition'; % 选择训练还是测试
 else
     dataset = 'training';
 end
 [ segpath, ~ ] = getpath( dataset );
 
-rawpic_dir=dir([ segpath, '\*.png' ]); % 原始tif图片地址
+% for iiii=3:6
+% segpath = ['E:\datasets\first_edition\training_datasets\N2DH-SIM\0',num2str(iiii),'_0-00_seg'];
+
+rawpic_dir=dir([ segpath, '\*.tif' ]); % 原始tif图片地址
 % 输出拟合后图片地址 
 output_addr = [ segpath, '\FOI拟合图2.0\'];
 if ~exist(output_addr, 'dir')
@@ -38,35 +41,36 @@ else
     ellipse = cell(length(rawpic_dir),1);
 end
 %########## 拟合公差 移除小区域 
-tolerance = 2.0;
-remove_small = 25; % 移除小物体的阈值可以稍微大一点！
+tolerance = 5.0; % 简单的数据集可将tol调大
+remove_small = 50; % 移除小物体的阈值可以稍微大一点！
 
 %% 开始循环处理图片 
 
-for frame=1:length(rawpic_dir)
+for t=1:length(rawpic_dir)
     
     iteration_num = -1;
     lunkuo = 'error';
-    pic = [ segpath, '\', rawpic_dir(frame).name ];
+    pic = [ segpath, '\', rawpic_dir(t).name ];
 
     while strcmp(lunkuo, 'error') % 如果出错则增大滤波次数
         iteration_num = iteration_num + 1;
-        if iteration_num>4
-            error('滤波次数达到4次！查看具体情况');
+        if iteration_num>5
+            error('滤波次数达到5次！查看具体情况');
         end
 %         iteration_num = 1;
-        [ ellipse{frame}, lunkuo] = CX_Fit( frame, pic, iteration_num, tolerance, remove_small);   %%不进行滤波
+        [ ellipse{t}, lunkuo] = CX_Fit( t, pic, iteration_num, tolerance, remove_small); % 不进行滤波
     end
 
     % 保存FOI内的轮廓，后面需要replot
-    lunkuo_name = [ lunkuo_addr, rawpic_dir(frame).name ];
+    lunkuo_name = [ lunkuo_addr, rawpic_dir(t).name ];
     imwrite(lunkuo, lunkuo_name);
     
     % 保存拟合后的figure
     disp('保存结果');
-    savename = strcat(output_addr, rawpic_dir(frame).name(1:end-4), '_fit.fig');
+    savename = strcat(output_addr, rawpic_dir(t).name(1:end-4), '_fit.fig');
     saveas(1, savename);  % 句柄控制
     close('1');
     save(ellipse_address, 'ellipse');
 end
 
+% end

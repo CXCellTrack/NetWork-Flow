@@ -22,8 +22,15 @@ end
 % 读入CX-Network 处理之后产生的初始椭圆数据
 
 [ segpath trackpath ] = getpath( dataset );
-mkdir(trackpath);
 
+% ----
+% iiii = 6;
+% segpath = ['E:\datasets\first_edition\training_datasets\N2DH-SIM\0',num2str(iiii),'_0-00_seg'];
+% trackpath = ['E:\datasets\first_edition\training_datasets\N2DH-SIM\0',num2str(iiii),'_0-00_track'];
+% ----
+
+disp(trackpath);
+mkdir(trackpath);
 raw_ellipse_path = [segpath, '\FOI拟合图2.0\raw_ellipse.mat'];
 load( raw_ellipse_path );
 

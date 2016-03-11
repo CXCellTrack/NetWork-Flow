@@ -12,13 +12,18 @@
 %
 % =========================================================================
 clear;close all
-if 0
+if 1
     dataset = 'competition';
 else
     dataset = 'training';
 end
 [ segpath trackpath ] = getpath( dataset );
 
+% -------- %
+% iiii = 5;
+% segpath = ['E:\datasets\first_edition\training_datasets\N2DH-SIM\0',num2str(iiii),'_0-00_seg'];
+% trackpath = ['E:\datasets\first_edition\training_datasets\N2DH-SIM\0',num2str(iiii),'_0-00_track'];
+% -------- %
 pre_data_addr = [ trackpath, '\Pair\Pre_data_New.mat'];
 
 last = max(strfind(segpath, '\'));
@@ -79,6 +84,7 @@ for t=1:frame-1
             diff_6_8 = (fj_6_8 - fk_6_8)';
             % 合成move特征，最后补上一个1，作为增广特征 2015.6.24（后来移到mapmimax归一化中进行增广的处理）
             feature_fij{t}{j,mm} = [ diff_1_4; diff_5; diff_6_8 ];
+            feature_fij{t}{j,mm}(isnan(feature_fij{t}{j,mm})') = 0;
 
         end      
 %         others = setdiff( 1:n(t+1),candidate_k );
@@ -132,6 +138,7 @@ for t=1:frame-1
             % 合成分裂特征，最后补上一个1，作为增广特征 2015.6.24
             feature_fid{t}{j,mm} = [ diff_intensity_sum, angle_patten, diff_sons_ec, diff_sons_size,...
                 diff_sons_intensity, shape_compact, father_ec, father_intensity ]';
+            feature_fid{t}{j,mm}(isnan(feature_fid{t}{j,mm})') = 0;
         end
     end
 end
@@ -153,6 +160,7 @@ for t=2:frame
         feature_intensity = [ e_j.feature.intensity.sum, e_j.feature.intensity.mean, e_j.feature.intensity.devia ];
         % 最后补上一个1，作为增广特征 2015.6.24
         feature_fsj{t}{j,1} = [ s_d, feature_intensity ]';
+        feature_fsj{t}{j,1}(isnan(feature_fsj{t}{j,1})') = 0;
     end
 end
 toc
@@ -173,6 +181,7 @@ for t=1:frame-1
         feature_intensity = [ e_j.feature.intensity.sum, e_j.feature.intensity.mean, e_j.feature.intensity.devia ];
          % 最后补上一个1，作为增广特征 2015.6.24
         feature_fit{t}{j,1} = [ s_d, feature_intensity ]';
+        feature_fit{t}{j,1}(isnan(feature_fit{t}{j,1})') = 0;
     end
 end
 toc
@@ -209,6 +218,7 @@ for t=1:frame-1
 %             source_fitness = father.hd;
             % 最后补上一个1，作为增广特征 2015.6.24
             feature_fiv{t}{j,mm} = [ diff_intensity_sum, diff_size_sum, shape_compact, diff_sons_size ]';
+            feature_fiv{t}{j,mm}(isnan(feature_fiv{t}{j,mm})') = 0;
         end
     end
 end
@@ -246,6 +256,7 @@ for t=2:frame
 %             source_fitness = father.hd;
             % 最后补上一个1，作为增广特征 2015.6.24
             feature_fmj{t}{j,mm} = [ diff_intensity_sum, diff_size_sum, shape_compact, diff_sons_size ]';
+            feature_fmj{t}{j,mm}(isnan(feature_fmj{t}{j,mm})') = 0;
         end
     end
 end
@@ -256,22 +267,22 @@ toc
 % 特征1     ：size
 % 特征2-4   ：灰度和，灰度均值，灰度标准差, dist2border
 %###########################################
-feature_ffd = cell(frame-1,1);
-feature_ffd_p = cell(frame-1,1);
-for t=1:frame-1
-    for j=1:n(t)
-        p_s = Ellipse{t}{j}.feature.geo.size;
-        feature_intensity = [ Ellipse{t}{j}.feature.intensity.sum, Ellipse{t}{j}.feature.intensity.mean, Ellipse{t}{j}.feature.intensity.devia ];
-        % 最后补上一个1，作为增广特征 2015.6.24
-        feature_ffd{t}{j,1} = [ p_s, feature_intensity, Ellipse{t}{j}.feature.dist2border ]';
-    end
-end
-toc
+% feature_ffd = cell(frame-1,1);
+% feature_ffd_p = cell(frame-1,1);
+% for t=1:frame-1
+%     for j=1:n(t)
+%         p_s = Ellipse{t}{j}.feature.geo.size;
+%         feature_intensity = [ Ellipse{t}{j}.feature.intensity.sum, Ellipse{t}{j}.feature.intensity.mean, Ellipse{t}{j}.feature.intensity.devia ];
+%         % 最后补上一个1，作为增广特征 2015.6.24
+%         feature_ffd{t}{j,1} = [ p_s, feature_intensity, Ellipse{t}{j}.feature.dist2border ]';
+%     end
+% end
+% toc
 
 %% 将特征归一化到【-1，1】区间，方便后续计算(2015.9.29)
 tic
-disp('进行特征归一化...');
 if strcmp(dataset, 'training')
+    disp('进行特征归一化...');
     [ feature_fij feature_fij_p minmax.fij.min minmax.fij.max ] = CX_mapminmax( feature_fij );
     [ feature_fid feature_fid_p minmax.fid.min minmax.fid.max ] = CX_mapminmax( feature_fid );
     [ feature_fit feature_fit_p minmax.fit.min minmax.fit.max ] = CX_mapminmax( feature_fit );
@@ -280,6 +291,7 @@ if strcmp(dataset, 'training')
     [ feature_fsj feature_fsj_p minmax.fsj.min minmax.fsj.max ] = CX_mapminmax( feature_fsj );
     save([ trackpath, '\结构化学习\minmax.mat'], 'minmax');
 else
+    disp('将特征归一化到训练集标准...');
     [ ~, traintrackpath ] = getpath( 'training' ); % 测试需要从训练中载入归一参数
     load([ traintrackpath, '\结构化学习\minmax.mat'], 'minmax');
     [ feature_fij feature_fij_p ] = CX_mapminmax( feature_fij, minmax.fij );

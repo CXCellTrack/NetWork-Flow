@@ -4,6 +4,8 @@ clear
 %% ÑµÁ·Ä¿Â¼
 dataset = 'training';
 [ ~, trackpath ] = getpath( dataset );
+% iiii = 6;
+% trackpath = ['E:\datasets\first_edition\training_datasets\N2DH-SIM\0',num2str(iiii),'_0-00_track'];
 path = {};
 path{1} = [ trackpath, '\GT'];
 path{2} = [ trackpath, '\GT\GT_after_hand_tune'];

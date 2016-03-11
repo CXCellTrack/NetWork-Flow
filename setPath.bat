@@ -8,13 +8,13 @@ set regpath=HKEY_CURRENT_USER\Environment
 
 set evname=trainSegPath
 
-set trainSegPath=E:\datasets\first_edition\training_datasets\N2DL-HeLa\01_2-16_seg
+set trainSegPath=E:\datasets\first_edition\training_datasets\N2DH-GOWT1\02_0-64_seg
 
 reg add "%regpath%" /v %evname% /d %trainSegPath% /f
 
 set evname=trainTrackPath
 
-set trainTrackPath=E:\datasets\first_edition\training_datasets\N2DL-HeLa\01_2-16_track
+set trainTrackPath=E:\datasets\first_edition\training_datasets\N2DH-GOWT1\02_0-64_track
 
 reg add "%regpath%" /v %evname% /d %trainTrackPath% /f
 
@@ -22,13 +22,13 @@ reg add "%regpath%" /v %evname% /d %trainTrackPath% /f
 
 set evname=testSegPath
 
-set testSegPath=E:\datasets\first_edition\training_datasets\N2DL-HeLa\02_4-16_seg
+set testSegPath=E:\datasets\first_edition\training_datasets\N2DH-GOWT1\01_0-64_seg
 
 reg add "%regpath%" /v %evname% /d %testSegPath% /f
 
 set evname=testTrackPath
 
-set testTrackPath=E:\datasets\first_edition\training_datasets\N2DL-HeLa\02_4-16_track
+set testTrackPath=E:\datasets\first_edition\training_datasets\N2DH-GOWT1\01_0-64_track
 
 reg add "%regpath%" /v %evname% /d %testTrackPath% /f
 
@@ -45,6 +45,10 @@ rem taskkill /f /im explorer.exe && explorer.exe
  
 rem 暂停但不显示“请按任意键继续”
 
-pause>nul
+ping localhost -n 3 >nul
+
+exit
+
+rem pause>nul
 
 

@@ -20,7 +20,7 @@
 %    Attention：如果出现其他形式的操作，将会报错！
 % ================================================================== %
 clear;close all;
-if 1
+if 0
     dataset = 'competition';
 else
     dataset = 'training';

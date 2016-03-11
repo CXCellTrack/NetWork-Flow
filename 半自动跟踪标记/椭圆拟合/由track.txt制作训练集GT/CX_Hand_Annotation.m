@@ -8,7 +8,7 @@
 %######################################
 
 clear;close all;
-[ ~, trackpath ] = getpath( 'training' );trackpath='E:\datasets\first_edition\training_datasets\N2DL-HeLa\01_2-16_track';
+[ ~, trackpath ] = getpath( 'training' );
 
 last = max(strfind(trackpath, '\'));
 gtpath = [trackpath(1:last+2), '_GT\TRA\'];
@@ -60,11 +60,12 @@ screen_size = get(0,'ScreenSize');
 
 %% 进行半自动标记
 
-for t=1:frame % 对frame中有，但目前标记中没有的进行标记
+for t=92:frame % 对frame中有，但目前标记中没有的进行标记
     for j=1:n(t)
         center_e{t}(j,1) = Ellipse{t}{j}.x0;
         center_e{t}(j,2) = Ellipse{t}{j}.y0;
     end
+    
     %% 单假说前景进行自动标记，每个*找到离自己最近的椭圆
     distance{t} = dist(center_e{t}, center_gt{t}'); 
     
@@ -85,6 +86,11 @@ for t=1:frame % 对frame中有，但目前标记中没有的进行标记
     
     %% 找出未被label对应上的椭圆（包括虚景和多假说前景）进行手动标记
     e_not_labed = setdiff( 1:numel(Ellipse{t}), label2e{t}(:,1) );
+    label_not_attached = find(label2e{t}==0);
+    if isempty(e_not_labed) && isempty(label_not_attached)
+        continue;
+    end
+    
     % 打开当前图片，把上述椭圆标记成红色
     disp(['当前正在处理 ',fig_dir(t).name]);
     openfig( [ trackpath, '\GT\label_and_e\', fig_dir(t).name] );
@@ -104,7 +110,6 @@ for t=1:frame % 对frame中有，但目前标记中没有的进行标记
     % ------------------------------------------------------------------- %
     % 将没被自动标记上的椭圆绘制为红色，*点绘制为蓝色，以加强视觉区分
     % 1、绘制蓝色点
-    label_not_attached = find(label2e{t}==0);
     for ind = 1:numel(label_not_attached)
         h_label = findobj(h, 'color', 'w', 'DisplayName', num2str(label_not_attached(ind)) );
         set(h_label, 'color', 'b');
@@ -129,10 +134,11 @@ for t=1:frame % 对frame中有，但目前标记中没有的进行标记
     label2e{t}(tmp_label2e(:,1),1) = tmp_label2e(:,2);
     clear global;
     
-    if 0
+    if 1
         disp('保存结果到 label2e.mat 中');
         save([ trackpath, '\GT\Label_to_Ellipse.mat'], 'label2e');
     end
+    
 end
 %
 % 人工标记使用方法： 红色的椭圆是没被对应上的椭圆，先点击白点，再点击椭圆，就可以将其对应上
