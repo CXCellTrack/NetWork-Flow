@@ -16,8 +16,7 @@ else
 end
 [ segpath, ~ ] = getpath( dataset );
 
-% for iiii=3:6
-% segpath = ['E:\datasets\first_edition\training_datasets\N2DH-SIM\0',num2str(iiii),'_0-00_seg'];
+segpath = [segpath, '_gt'];
 
 rawpic_dir=dir([ segpath, '\*.tif' ]); % 原始tif图片地址
 % 输出拟合后图片地址 
@@ -42,11 +41,11 @@ else
 end
 %########## 拟合公差 移除小区域 
 tolerance = 5.0; % 简单的数据集可将tol调大
-remove_small = 50; % 移除小物体的阈值可以稍微大一点！
+remove_small = 20; % 移除小物体的阈值可以稍微大一点！
 
 %% 开始循环处理图片 
 
-for t=1:length(rawpic_dir)
+for t=24:length(rawpic_dir)
     
     iteration_num = -1;
     lunkuo = 'error';

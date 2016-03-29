@@ -2,9 +2,9 @@
 
 clear
 % 载入标准答案的中心点数据
-load('E:\datasets\second_edition\training_datasets\Fluo-N2DH-SIM+\01_4-16_track\椭圆拟合\GT\center_gt.mat');
-load('E:\datasets\second_edition\training_datasets\Fluo-N2DH-SIM+\01_4-16_track\椭圆拟合\Pair\Pre_data_new.mat','n');
-contour_path = 'E:\datasets\second_edition\training_datasets\Fluo-N2DH-SIM+\01_4-16_seg\FOI提取轮廓\';
+load('E:\datasets\first_edition\training_datasets\N2DH-SIM\05_0-00_track\GT\center_gt.mat');
+load('E:\datasets\first_edition\training_datasets\N2DH-SIM\05_0-00_track\Pair\Pre_data_new.mat','n');
+contour_path = 'E:\datasets\first_edition\training_datasets\N2DH-SIM\05_0-00_seg\FOI提取轮廓\';
 
 frame = numel(n);
 contour_dir = dir([ contour_path, '*.tif' ]);

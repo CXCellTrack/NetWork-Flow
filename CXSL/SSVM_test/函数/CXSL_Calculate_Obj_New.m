@@ -43,7 +43,6 @@ else
     wiv = w_best( 22:25 )';
     wmj = w_best( 26:29 )';
     wsj = w_best( 30:34 )';
-   
 end
     
 % 组合目标函数

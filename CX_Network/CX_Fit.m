@@ -28,7 +28,7 @@ tic;
 %   ? E = 25 for the datasets Fluo-C3DL-MDA231, Fluo-N2DL-HeLa, and PhC-C2DL-PSC,
 %   ? E = 0 for the simulated datasets (i.e., Fluo-N2DH-SIM, Fluo-N2DH-SIM+, Fluo-N3DH-SIM, and
 %   Fluo-N3DH-SIM+) and for the dataset Fluo-N3DL-DRO.
-    foi = 50;
+    foi = 0;
     % 调用内部函数
     bw = Remove_Cells_Out_Of_FOI( bw, foi );
 

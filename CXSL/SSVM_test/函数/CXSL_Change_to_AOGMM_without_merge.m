@@ -127,11 +127,15 @@ end
        
        
 % 保存 track_txt 到文本
-filetosave = [trackpath(1:end-11), '_RES\res_track.txt'];
+RES_path = [trackpath(1:end-11), '_RES'];
+if ~exist(RES_path, 'file')
+    warning('没有RES目录！');
+    mkdir(RES_path);
+end
+filetosave = [RES_path, '\res_track.txt'];
 fidin = fopen(filetosave,'wt');
 if fidin==-1
-    warning('RES目录没有！');
-    mkdir([trackpath(1:end-11), '_RES']);
+    error('无法创建res_track！');
 end
 for ii=1:size(track_txt,1)
     fprintf(fidin, '%d %d %d %d\n',track_txt(ii,:));
@@ -152,30 +156,31 @@ for i=1:numel(gt_dir)
     movefile(source, desti,'f');
 end
 gtpath = [trackpath(1:end-11), '_GT\SEG\'];
-gt_dir = dir([gtpath,'*.tif']);
-for i=1:numel(gt_dir)
-    source = [gtpath,gt_dir(i).name];
-    desti = [gtpath,'man_seg0',gt_dir(i).name(end-5:end)];
-    if strcmp(source,desti)
-        break
-    end
-    movefile(source,desti, 'f');
-end
+% gt_dir = dir([gtpath,'*.tif']);
+% for i=1:numel(gt_dir)
+%     source = [gtpath,gt_dir(i).name];
+%     desti = [gtpath,'man_seg0',gt_dir(i).name(end-5:end)];
+%     if strcmp(source,desti)
+%         break
+%     end
+%     movefile(source,desti, 'f');
+% end
 % ========================================= %
 % % mask000 也一样
-% dirpath = 'E:\datasets\first_edition\training_datasets\N2DL-HeLa\01_RES\';
+% dirpath = 'E:\datasets\first_edition\competition_datasets\N2DL-HeLa\02_RES\';
 % gt_dir = dir([dirpath,'*.tif']);
 % for i=1:numel(gt_dir)
 %     movefile([dirpath,gt_dir(i).name], [dirpath,'mask0',gt_dir(i).name(end-5:end)],'f');
 % end 
 
 % % 将gt变为80帧，以便比较
-% man_track = 'E:\datasets\first_edition\training_datasets\N2DL-HeLa\01_GT\TRA\man_track.txt';
+% man_track = 'E:\datasets\first_edition\training_datasets\N2DL-HeLa\KTH\02_RES\res_track.txt';
+% nframe = 59;
 % file = load(man_track);
-% file(file(:,3)>=79, 3) = 79;
+% file(file(:,3)>=nframe, 3) = nframe;
 % i = 1;
 % while i<=size(file,1)
-%     if file(i,2)>79
+%     if file(i,2)>nframe
 %         file(i,:) = [];
 %     else
 %         i = i+1;
@@ -208,15 +213,17 @@ for t=1:frame
         % 在黑图上画出椭圆
         [im,count] = plot_ellipse_label(im, Label, Ellipse{t}{j}, 1);
         if count==0
-            warning([num2str(t),':',num2str(j),' count=0']); 
+            error(['第',num2str(t),'帧-',num2str(j),'号椭圆没有画出label！']); 
         end   
     end
     
     name = num2str(t-1);
     if t<=10 % 名字必须为3位
+        name = ['00', name];
+    elseif t<=100
         name = ['0', name];
     end
-    imwrite(im, [saveaddr,'mask0',name,'.tif']);toc
+    imwrite(im, [saveaddr,'mask',name,'.tif']);toc
 end
         
       

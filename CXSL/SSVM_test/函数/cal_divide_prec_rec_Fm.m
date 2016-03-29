@@ -1,4 +1,4 @@
-function [PRE, REC, FM] = cal_divide_prec_rec_Fm(man_track_txt, res_track_txt)
+function [PRE, REC, FM, Tcount, Pcount] = cal_divide_prec_rec_Fm( man_track_txt, res_track_txt )
 
 
 %% 读入tif图片和track。txt
@@ -20,31 +20,39 @@ if ~isempty(sing)
     for as=sing'
         man_track(man_track(:,4)==as,:) = [];
     end
-end
-    
-res_track = res_track(res_track(:,4)~=0,:);
+end % 在man track中挑出分裂事件
+
+% ----------------------------------
+res_track = res_track(res_track(:,4)~=0,:); % 在res track中挑出分裂事件
 [~,I] = sort(res_track(:,4));
 res_track = res_track(I,:);
-
 st = tabulate(res_track(:,4)); % 若发现单个的，则删去
-if size(st,1)==0
-    disp('res_track中没有发现分裂事件！');
-    PRE = nan;
-    REC = nan;
-    FM = nan;
-    return
-end
-sing = find(st(:,2)==1);
-if ~isempty(sing)
-    for as=sing'
-        res_track(res_track(:,4)==as,:) = [];
+
+% 求出predict分裂的数目
+if size(st,1)~=0
+    sing = find(st(:,2)==1);
+    if ~isempty(sing)
+        for as=sing'
+            res_track(res_track(:,4)==as,:) = [];
+        end
     end
+    res_track = [res_track, zeros(size(res_track,1),1)];
 end
-res_track = [res_track, zeros(size(res_track,1),1)];
 
 % truth 数目 predict数目
 Tcount = size(man_track,1)/2;
 Pcount = size(res_track,1)/2;
+
+if Pcount==0
+    disp('res_track中没有发现分裂事件！');
+    PRE = nan;
+    REC = nan;
+    FM = nan;
+    fprintf('Truth number:\t%d\n', Tcount);
+    fprintf('Predict number:\t%d\n', Pcount);
+    return
+end
+
 
 %% 统计TP数目
 TP = 0;
@@ -102,9 +110,13 @@ for h=1:2:size(man_track,1)
 end
 
 %% 最终结果
-PRE = TP/Pcount; fprintf('\n\nprecision:\t%f\n',PRE);
-REC = TP/Tcount; fprintf('recall:\t\t%f\n',REC);
+fprintf('\n分裂3值如下：\n');
+PRE = TP/Pcount; fprintf('\nPrecision:\t%f\n',PRE);
+REC = TP/Tcount; fprintf('Recall:\t\t%f\n',REC);
 FM = 2/(1/PRE+1/REC); fprintf('F-measure:\t%f\n',FM);
+fprintf('Truth number:\t%d\n', Tcount);
+fprintf('Predict number:\t%d\n', Pcount);
+
 
 
 

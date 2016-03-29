@@ -21,7 +21,7 @@ end
 % 指定测试帧的范围
 testdir = dir([ trackpath(1:end-11), '\*.tif']);
 s_frame = 1;
-e_frame = numel(testdir);
+e_frame = 150; %numel(testdir);
 disp(['  计算 ',num2str(s_frame), '—',num2str(e_frame), ' 帧的目标函数和约束条件...']);
 
 %% 计算约束条件 注意：不包含损失函数
@@ -50,12 +50,12 @@ if 1
         load([ traintrackpath, '\结构化学习\SSVM_Best_W_New.mat']);
     else % 想要复现 excel 中记载的以前的实验结果，只需要手动填写 w_best 即可
         disp('  载入之间保存的w...');
-        thisfile = 'initw_line_13_7_rng';
-        load([ traintrackpath, '\训练结果记录\BCFWavg_paper\', thisfile,'.mat' ], 'w_best','use_op_cons','Wavg');
+        thisfile = 'loss_32_2_cons35_cost1_init0p_noline';
+        load([ traintrackpath, '\训练结果记录\BCFWavg_paper\32_2_new\', thisfile,'.mat' ], 'w_best','use_op_cons','Wavg');
 %         w_best = Wavg{394};
 %         if ~isequal(use_op_cons, use_op_cons_test)
 %             error('测试所用的可选约束和训练不一致！');
-%         end
+%         end   
     end
 else  
     disp('  载入local SVM 训练出来的各事件w...');
@@ -141,27 +141,35 @@ if 0
 end
 
 %% 使用新的 TRAMeasure 进行评估
-name = thisfile;
-logpath = ['C:\Users\Administrator\Desktop\RESULT\gowt1-1\',name,'.txt']; % 每一条轨迹的跟踪路线
+% name = thisfile;
+clear; dataset = 'competition'; [ segpath, trackpath ] = getpath( dataset );
+name = 'loss_32_2_cons35_cost1_init0p_noline';
+logpath = ['C:\Users\Administrator\Desktop\RESULT\sim+-02\',name,'.txt']; % 每一条轨迹的跟踪路线
 if exist(logpath,'file')
     warning('目标log已存在，确认覆盖吗？');
     pause;
 end
-flowvars_path = [trackpath, '\新测试结果记录\',name,'.mat'];
-save(flowvars_path, 'Fij','Fit','Fid','Fiv','Fmj','Fsj');
+% flowvars_path = [trackpath, '\新测试结果记录\',name,'.mat'];
+% save(flowvars_path, 'Fij','Fit','Fid','Fiv','Fmj','Fsj');
 % 调用这个函数进行评估
+flowvars_path = [trackpath, '\新测试结果记录\', name, '.mat'];
+load(flowvars_path);
 diary on
 diary(logpath);
 fprintf('trackpath:\n\t%s\n',trackpath);
 fprintf('flowvars_path:\n\t%s\n', flowvars_path);
-fprintf('w:\n\t%s\n\n', num2str(w_best'));
+% fprintf('w:\n\t%s\n\n', num2str(w_best'));
 TRAmea(flowvars_path, dataset);
 
-fprintf('\n计算分裂事件的preci、recall和F-M...\n\n');
+fprintf('\n计算迁移、分裂事件的preci、recall和F-M...\n\n');
+
 man_track_txt = [trackpath(1:end-10), 'GT\TRA\man_track.txt'];
 res_track_txt = [trackpath(1:end-10), 'RES\res_track.txt'];
-% KTH_track_txt = [trackpath(1:end-13), 'KTH\01_RES\res_track.txt'];
-[PRE, REC, FM] = cal_divide_prec_rec_Fm(man_track_txt, res_track_txt);
+
+% man_track_txt = 'E:\datasets\training_datasets\N2DH-SIM\06_GT\TRA\man_track.txt';
+% res_track_txt = 'E:\datasets\training_datasets\N2DH-SIM\06_RES\res_track.txt';
+% [PRE, REC, FM, Tcount, Pcount] = cal_divide_prec_rec_Fm(man_track_txt, res_track_txt);
+[PRE, REC, FM, Tcount, Pcount] = cal_move_prec_rec_Fm( man_track_txt, res_track_txt );
 diary off
 
 
